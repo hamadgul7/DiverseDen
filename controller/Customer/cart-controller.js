@@ -4,7 +4,7 @@ const User = require('../../model/auth-model')
 async function viewCart(req, res){
     const { userId } = req.query;
     try{
-        const userCart = await Cart.findOne({userId: userId});
+        const userCart = await Cart.find({userId: userId});
         if(!userCart){
             return res.status(200).json({ message: "No Products Found in Cart" })
         }
