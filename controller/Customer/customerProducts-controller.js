@@ -54,21 +54,26 @@ async function getProductsByCategory(req, res){
     }
 }
 
-async function getProductsBySubcategoryAndType(req, res){
+async function getProductsBySubcategoryAndType(req, res) {
     const { subCategory, productType } = req.query;
-    try{
-        const products = await Product.find({
-            subCategory: subCategory,
+    try {
+        const query = {
             productType: productType
-        });
+        };
 
-        if(products.length === 0){
-            return res.status(200).json({message: `No Products found for subCategory ${subCategory} having product type of ${productType}`})
+        if (subCategory) {
+            query.subCategory = subCategory;
         }
 
+        const products = await Product.find(query);
+
+        if(products.length === 0){
+            return res.status(404).json({message: 'No Products Found'})
+        }
+        
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const productsWithImages = products.map((product) =>{
-            if(Array.isArray(product.imagePath)){
+        const productsWithImages = products.map((product) => {
+            if (Array.isArray(product.imagePath)) {
                 product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
             }
             return product;
@@ -76,13 +81,14 @@ async function getProductsBySubcategoryAndType(req, res){
 
         res.status(200).json({
             products: productsWithImages,
-            message: "Products Retrieved Successfully"
+            message: "Products Retrieved Successfully",
         });
-    }
-    catch(error){
-        res.status(400).json({message: error.message})
+    } 
+    catch (error) {
+        res.status(400).json({ message: error.message });
     }
 }
+
 
 async function searchProduct(req, res){
     try {
