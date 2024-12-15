@@ -60,4 +60,4 @@ async function planPayment(req, res){
     }           
 }
 
-module.exports = {planPayment:planPayment};
+module.exports = {planPayment: planPayment};

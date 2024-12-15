@@ -10,6 +10,7 @@ const branchOwnerSalespersonRoute = require('./routes/Branch Owner/salesperson-r
 const branchOwnerProductRoute = require('./routes/Branch Owner/product-routes');
 const customerCartRoute = require('./routes/Customer/cart-routes');
 const customerProductsRoute = require('./routes/Customer/customerProduct-routes')
+const orderRoutes = require('./routes/order-routes')
 const cors = require('cors');
 
 const app = express();
@@ -32,6 +33,7 @@ app.use('/branchOwner',branchOwnerSalespersonRoute);
 app.use('/branchOwner',branchOwnerProductRoute);
 app.use('/customer',customerCartRoute);
 app.use('/customer',customerProductsRoute);
+app.use(orderRoutes)
 
 
 
