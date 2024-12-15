@@ -1,23 +1,42 @@
 const Cart = require('../../model/Customer/cart-model');
 const User = require('../../model/auth-model')
 
-async function viewCart(req, res){
+async function viewCart(req, res) {
     const { userId } = req.query;
-    try{
-        const userCart = await Cart.find({userId: userId}).populate('productId');
-        if(userCart.length === 0){
-            return res.status(200).json({ message: "No Products Found in Cart" })
+    const baseUrl = `${req.protocol}://${req.get('host')}`; 
+
+    try {
+        const userCart = await Cart.find({ userId: userId }).populate('productId');
+
+        if (userCart.length === 0) {
+            return res.status(200).json({ message: "No Products Found in Cart" });
         }
 
+        const productsWithImages = userCart
+            .filter(cartItem => cartItem.productId)
+            .map(cartItem => {
+                const product = cartItem.productId.toObject(); 
+                if (Array.isArray(product.imagePath)) {
+                    product.imagePath = product.imagePath.map(image => `${baseUrl}/${image}`);
+                }
+                return {
+                    ...cartItem.toObject(),
+                    productId: product,
+                };
+            });
+
         res.status(200).json({
-            userCart,
-            message: "Cart Retrieved Successfully"
-        })
-    }
-    catch(error){
-        res.status(400).json({ message: error.message })
+            userCart: productsWithImages,
+            message: "Cart Retrieved Successfully",
+        });
+    } 
+    catch (error) {
+        res.status(400).json({ message: error.message });
     }
 }
+
+
+
 
 async function addToCart(req, res) {
     const { userId, productId, quantity, selectedVariant } = req.body;
@@ -80,14 +99,9 @@ async function updateProductQuantityInCart(req, res){
 }
 
 async function deleteProductFromCart(req, res) {
-    const { userId, productId } = req.body;
+    const {cartId } = req.body;
     try{
-        const deletedCartProduct = await Cart.findOneAndDelete(
-            {
-                userId: userId,
-                productId: productId
-            }
-        )
+        const deletedCartProduct = await Cart.findByIdAndDelete(cartId);
 
         res.status(200).json({ message: "Product Deleted Successfully from cart" })
     }

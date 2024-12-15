@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.get('/getProductById', verifyToken, productController.getProductbyId);
-router.get('/viewBusinessProductsById', verifyToken, productController.viewBusinessProductsbyId);
+router.get('/viewBusinessProductsById',verifyToken, productController.viewBusinessProductsbyId); 
 router.get('/viewBranchProductsById', verifyToken, productController.viewBranchProductsById);
 router.post('/addProduct', verifyToken, upload.array("media", 10), productController.addProduct);
 router.post('/updateProductById', verifyToken, upload.array("media", 10), productController.updateProductById);

@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const colorSchema = new mongoose.Schema({
     color: { 
         type: String, 
-        required: [true, "Color is required"] 
     },
 
     quantity: { 
@@ -21,7 +20,6 @@ const variantSchema = new mongoose.Schema({
 
     size: { 
         type: String, 
-        required: [true, "Size is required"]  
     }, 
     
     variantTotal: { 

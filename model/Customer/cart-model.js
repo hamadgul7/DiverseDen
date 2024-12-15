@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+
 const cartItemSchema = new mongoose.Schema(
     {
         userId: { 
@@ -18,8 +19,8 @@ const cartItemSchema = new mongoose.Schema(
             min: [1, "Quantity must be at least 1"] 
         }, 
         selectedVariant: { 
-            size: { type: String, required: [true, "Size is required"] },
-            color: { type: String, required: [true, "Color is required"] },
+            size: { type: String},
+            color: { type: String},
             material: { type: String }
         },
     },
