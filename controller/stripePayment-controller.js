@@ -60,4 +60,47 @@ async function planPayment(req, res){
     }           
 }
 
-module.exports = {planPayment: planPayment};
+
+async function orderPayment(req, res){
+    const { totalAmount, token} = req.body;   
+    const idempontencyKey = uuidv4();
+
+    try{
+        const customer = await stripe.customers.create({
+            email: token.email
+        });
+
+        await stripe.customers.createSource(customer.id, {
+            source: token.id,  
+        });
+
+        const oneDollar = 277.90;
+        const rupeesToDollar = parseInt(totalAmount / oneDollar);
+
+        const result = await stripe.charges.create(
+            {
+                amount: rupeesToDollar * 100,
+                currency: 'usd',
+                customer: customer.id,
+                description: ''
+            },
+            {
+                idempotencyKey: idempontencyKey, 
+            }
+        );
+
+        res.status(200).json({
+            payment: result,
+            message: "Payment successful",
+        });
+
+    }
+    catch(err){
+        console.error(err);
+        res.status(500).json({ message: "Payment failed", error: err.message });
+    }           
+}
+module.exports = {
+    planPayment: planPayment,
+    orderPayment: orderPayment
+};

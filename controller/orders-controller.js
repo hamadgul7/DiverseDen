@@ -10,8 +10,8 @@ async function addOrderDetails(req, res) {
         }
 
         const userInfo = {
-            firstname: data.firstname,
-            lastname: data.lastname,
+            firstname: data.firstName,
+            lastname: data.lastName,
             email: data.email,
             address: data.address,
             city: data.city,
@@ -20,8 +20,9 @@ async function addOrderDetails(req, res) {
             paymentMethod: data.paymentMethod
         };
 
+        
         const businessGroups = cartItems.reduce((acc, item) => {
-            const businessId = item.productId.businessId;
+            const businessId = item.productId.business;
             if (!acc[businessId]) {
                 acc[businessId] = [];
             }
