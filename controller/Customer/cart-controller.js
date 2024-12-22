@@ -35,9 +35,6 @@ async function viewCart(req, res) {
     }
 }
 
-
-
-
 async function addToCart(req, res) {
     const { userId, productId, quantity, selectedVariant } = req.body;
     try{
@@ -99,7 +96,7 @@ async function updateProductQuantityInCart(req, res){
 }
 
 async function deleteProductFromCart(req, res) {
-    const {cartId } = req.body;
+    const { cartId } = req.body;
     try{
         const deletedCartProduct = await Cart.findByIdAndDelete(cartId);
 
