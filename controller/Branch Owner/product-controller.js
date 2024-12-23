@@ -188,7 +188,6 @@ async function addProduct(req, res) {
                     message: `A product with the same SKU already exists but has a different title: "${skuExist.title}". Please assign a unique SKU or ensure the titles match.`,
                 });
             }
-            return res.status(400).json({ message: "SKU Already Exist, assign unique sku" })
         }
 
         const businessExist = await Business.findById(business);
@@ -317,6 +316,12 @@ async function deleteProductFromBranch(req, res) {
                 $pull: {products: productId}
             }
         );
+
+        const updateProductBranch = await Product.findByIdAndUpdate(
+            productId,
+            { $set: { branch: null } },
+        );
+        
 
         res.status(200).json({message: "Product Deleted Successfully"})
     }
