@@ -28,5 +28,6 @@ router.get('/viewBranchProductsById', verifyToken, productController.viewBranchP
 router.post('/addProduct', verifyToken, upload.array("media", 10), productController.addProduct);
 router.post('/updateProductById', verifyToken, upload.array("media", 10), productController.updateProductById);
 router.post('/deleteProductById', verifyToken, productController.deleteProductById);
+router.post('/deleteProductFromBranch',  productController.deleteProductFromBranch);
 
 module.exports = router;

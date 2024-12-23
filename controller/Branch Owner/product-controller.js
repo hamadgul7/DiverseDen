@@ -181,8 +181,13 @@ async function addProduct(req, res) {
             totalQuantity: data.totalQuantity
         }
 
-        const skuExist = await Branch.findOne({sku: data.sku});
+        const skuExist = await Product.findOne({sku: data.sku});
         if(skuExist){
+            if (skuExist.title !== data.title) {
+                return res.status(400).json({
+                    message: `A product with the same SKU already exists but has a different title: "${skuExist.title}". Please assign a unique SKU or ensure the titles match.`,
+                });
+            }
             return res.status(400).json({ message: "SKU Already Exist, assign unique sku" })
         }
 
@@ -303,12 +308,30 @@ async function deleteProductById(req, res){
     }
 }
 
+async function deleteProductFromBranch(req, res) {
+    const { branchId, productId } = req.body;
+    try{
+        const deleteProductFromBranch = await Branch.findByIdAndUpdate(
+            branchId,
+            {
+                $pull: {products: productId}
+            }
+        );
+
+        res.status(200).json({message: "Product Deleted Successfully"})
+    }
+    catch(error){
+        res.status(400).json({ message: error.message })
+    }
+}
+
 module.exports = {
     getProductbyId: getProductbyId,
     viewBusinessProductsbyId: viewBusinessProductsbyId,
     viewBranchProductsById: viewBranchProductsById,
     addProduct: addProduct,
     updateProductById: updateProductById,
-    deleteProductById: deleteProductById
+    deleteProductById: deleteProductById,
+    deleteProductFromBranch: deleteProductFromBranch
 }
 

@@ -70,7 +70,6 @@ async function getOrders(req, res){
     const { business, pageNo, limit } = req.query;
 
     try {
-        // Validate query parameters
         const pageNumber = parseInt(pageNo);
         const pageLimit = parseInt(limit);
 
@@ -82,32 +81,27 @@ async function getOrders(req, res){
             return res.status(400).json({ message: "Business ID not found" });
         }
 
-        // Fetch orders for the given business
         const businessOrders = await Order.find({ businessId: business }).populate('cartItems');
 
         if (!businessOrders || businessOrders.length === 0) {
             return res.status(200).json({ message: "No Orders found!!!!!" });
         }
 
-        // Add cartItems count for each order
         const ordersWithItemCount = businessOrders.map(order => ({
             ...order.toObject(),
             cartItemCount: order.cartItems.length || 0
         }));
 
-        // Paginate orders
         const startIndex = (pageNumber - 1) * pageLimit;
         const endIndex = startIndex + pageLimit;
 
-        const totalOrders = ordersWithItemCount.length; // Total number of orders
+        const totalOrders = ordersWithItemCount.length; 
         const totalPages = Math.ceil(totalOrders / pageLimit);
-        const paginatedOrders = ordersWithItemCount.slice(startIndex, endIndex); // Paginate orders
+        const paginatedOrders = ordersWithItemCount.slice(startIndex, endIndex); 
 
-        // Determine next and previous pages
         const nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
         const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
-
-        // Respond with paginated orders and metadata
+        
         res.status(200).json({
             businessOrders: paginatedOrders,
             meta: {
