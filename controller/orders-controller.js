@@ -94,8 +94,15 @@ async function getOrders(req, res){
         const totalPages = Math.ceil(totalOrders / pageLimit);
         const paginatedOrders = businessOrders.slice(startIndex, endIndex); 
 
-        const nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
-        const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
+        let nextPage = null
+        if(pageNumber < totalPages){
+            nextPage = pageNumber + 1;
+        }
+
+        let previousPage = null
+        if(pageNumber > 1){
+            previousPage = pageNumber - 1;
+        }
 
         res.status(200).json({
             businessOrders: paginatedOrders,
