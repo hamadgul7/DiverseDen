@@ -67,25 +67,51 @@ async function addOrderDetails(req, res) {
 }
 
 async function getOrders(req, res){
-    const { business } = req.query;
-    try{
-        if(!business){
-            return res.status(400).json({message: "Business ID not found"})
+    const { business, pageNo, limit } = req.query;
+
+    try {
+        const pageNumber = parseInt(pageNo);
+        const pageLimit = parseInt(limit);
+
+        if (pageNumber < 1 || pageLimit < 1) {
+            return res.status(400).json({ message: "Page Number and Limit must be positive numbers" });
         }
 
-        const businessOrders = await Order.find({businessId: business}).populate('cartItems');
-        if(!businessOrders){
-            return res.status(200).json({message: "No Orders found!"})
+        if (!business) {
+            return res.status(400).json({ message: "Business ID not found" });
         }
+
+        const businessOrders = await Order.find({ businessId: business }).populate('cartItems');
+
+        if (!businessOrders || businessOrders.length === 0) {
+            return res.status(200).json({ message: "No Orders found!" });
+        }
+
+        const startIndex = (pageNumber - 1) * pageLimit;
+        const endIndex = startIndex + pageLimit;
+
+        const totalOrders = businessOrders.length; 
+        const totalPages = Math.ceil(totalOrders / pageLimit);
+        const paginatedOrders = businessOrders.slice(startIndex, endIndex); 
+
+        const nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
+        const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
 
         res.status(200).json({
-            businessOrders,
-            message: "Orders retrieved Successfully"
-        })
+            businessOrders: paginatedOrders,
+            meta: {
+                totalItems: totalOrders,
+                totalPages,
+                currentPage: pageNumber,
+                pageLimit,
+                nextPage,
+                previousPage,
+            },
+            message: "Orders retrieved Successfully",
+        });
 
-    }
-    catch(error){
-        res.status(400).json({ message: error.message })
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 }
 

@@ -4,6 +4,6 @@ const verifyToken = require('../middleware/authMiddleware')
 const orderController = require('../controller/orders-controller');
 
 router.post('/addOrderDetails', orderController.addOrderDetails);
-router.get('/getOrders', verifyToken, orderController.getOrders);
+router.get('/getOrders', orderController.getOrders);
 
 module.exports = router;
