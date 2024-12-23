@@ -2,7 +2,7 @@ const Order = require('../model/orders-model');
 
 
 async function addOrderDetails(req, res) {
-    const { data, cartItems, totalAmount } = req.body;
+    const { data, cartItems } = req.body;
     try {
         const userId = cartItems.find(item => item.userId)?.userId;
         if (!userId) {
@@ -66,6 +66,30 @@ async function addOrderDetails(req, res) {
     }
 }
 
+async function getOrders(req, res){
+    const { business } = req.query;
+    try{
+        if(!business){
+            return res.status(400).json({message: "Business ID not found"})
+        }
+
+        const businessOrders = await Order.find({businessId: business}).populate('cartItems');
+        if(!businessOrders){
+            return res.status(200).json({message: "No Orders found!"})
+        }
+
+        res.status(200).json({
+            businessOrders,
+            message: "Orders retrieved Successfully"
+        })
+
+    }
+    catch(error){
+        res.status(400).json({ message: error.message })
+    }
+}
+
 module.exports = {
-    addOrderDetails: addOrderDetails
+    addOrderDetails: addOrderDetails,
+    getOrders: getOrders
 }

@@ -107,10 +107,29 @@ async function deleteProductFromCart(req, res) {
     }
 }
 
+async function emptyCart(req, res){
+    const { userId } = req.body;
+    try{
+        const deletedItems = await Cart.deleteMany({userId: userId})
+        if(!deletedItems){
+            return res.status(200).json({message: `No Items found for user have Id: ${userId}`})
+        }
+
+        res.status(200).json({
+            deletedItems,
+            message: "Items deleted Successfully"
+        })
+    }
+    catch(error){
+        res.status(400).json({ message: error.message })
+    }
+}
+
 
 module.exports = {
     viewCart: viewCart,
     addToCart: addToCart,
     updateProductQuantityInCart: updateProductQuantityInCart,
-    deleteProductFromCart: deleteProductFromCart
+    deleteProductFromCart: deleteProductFromCart,
+    emptyCart: emptyCart
 }
