@@ -34,44 +34,48 @@ async function getProductbyId(req, res){
 async function viewBusinessProductsbyId(req, res) {
     const { business, pageNo, limit } = req.query;
     
-    try{
+    try {
         const pageNumber = parseInt(pageNo);
         const pageLimit = parseInt(limit);
 
-        if(pageNumber < 1 || pageLimit < 1){
-            return res.status(400).json({ message: "Page Number and Limit must be positive numbers" })
+        if (pageNumber < 1 || pageLimit < 1) {
+            return res.status(400).json({ message: "Page Number and Limit must be positive numbers" });
         }
 
         const skip = (pageNumber - 1) * pageLimit;
 
-        if(!business){
-            return res.status(404).json({message: "BusinessId not available"})
+        if (!business) {
+            return res.status(404).json({ message: "BusinessId not available" });
         }
 
-        const businessProducts = await Product.find({business: business}).skip(skip).limit(pageLimit);
-        if(businessProducts.length === 0){
-            return res.status(200).json({message: "No Products found!"})
-        }
-        const totalProducts = await Product.countDocuments({business: business});
-        const totalPages = Math.ceil( totalProducts/ pageLimit );
+        
+        const businessProducts = await Product.find({ business }).skip(skip).limit(pageLimit);
 
-        let nextPage = null
-        if(pageNumber < totalPages){
-            nextPage = pageNumber + 1;
+        if (businessProducts.length === 0) {
+            return res.status(200).json({ message: "No Products found!" });
         }
 
-        let previousPage = null
-        if(pageNumber > 1){
-            previousPage = pageNumber - 1;
-        }
+        const totalProducts = await Product.countDocuments({ business });
+        const totalPages = Math.ceil(totalProducts / pageLimit);
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        let nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
+        let previousPage = pageNumber > 1 ? pageNumber - 1 : null;
+
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
 
         const productsWithImages = businessProducts.map(product => {
             if (Array.isArray(product.imagePath)) {
                 product.imagePath = product.imagePath.map(image => `${baseUrl}/${image}`);
             }
-            return product;
+
+            return {
+                ...product.toObject(),
+                remainingQuantity: product.totalQuantity - (product.totalAssignedQuantity || 0),
+                variants: product.variants.map(variant => ({
+                    ...variant,
+                    remainingQuantity: variant.variantTotal - (variant.assignedQuantity || 0) 
+                }))
+            };
         });
 
         res.status(200).json({
@@ -84,79 +88,19 @@ async function viewBusinessProductsbyId(req, res) {
                 nextPage,
                 previousPage,
             },
-            message: "Products Retrived Successfully"
-        })
-    }
-    catch(error){
-        res.status(400).json({message: error.message})
-    }
-}
-
-async function viewBranchProductsById(req, res) {
-    const { branchId, pageNo, limit } = req.query;
-
-    try {
-        const pageNumber = parseInt(pageNo);
-        const pageLimit = parseInt(limit);
-
-        if (pageNumber < 1 || pageLimit < 1) {
-            return res.status(400).json({ message: "PageNo and PageLimit must be positive integers" });
-        }
-
-        const branch = await Branch.findById(branchId).populate('products');
-        if (!branch) {
-            return res.status(404).json({ message: "Branch not found" });
-        }
-
-        if (!branch.products || branch.products.length === 0) {
-            return res.status(200).json({ message: "No products found for this branch" });
-        }
-
-        const startIndex = (pageNumber - 1) * pageLimit;
-        const endIndex = startIndex + pageLimit;
-        const paginatedProducts = branch.products.slice(startIndex, endIndex);
-
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const productsWithImages = paginatedProducts.map((product) => {
-            if (Array.isArray(product.imagePath)) {
-                product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
-            }
-            return product;
-        });
-
-        const totalProducts = branch.products.length;
-        const totalPages = Math.ceil(totalProducts / pageLimit);
-        let nextPage = null
-        if(pageNumber < totalPages){
-            nextPage = pageNumber + 1;
-        }
-
-        let previousPage = null
-        if(pageNumber > 1){
-            previousPage = pageNumber - 1;
-        }
-
-        res.status(200).json({
-            products: productsWithImages,
-            meta: {
-                totalItems: totalProducts,
-                totalPages,
-                currentPage: pageNumber,
-                pageLimit,
-                nextPage,
-                previousPage,
-            },
-            message: "Products retrieved successfully",
+            message: "Products Retrieved Successfully"
         });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 }
 
+
 async function addProduct(req, res) {
     const data = JSON.parse(req.body.data);
     const business = req.body.business;
     const files = req.files;
+    console.log(data)
     if(!files){
         console.log("No image")
     }
@@ -177,7 +121,8 @@ async function addProduct(req, res) {
             sku: data.sku,
             variants: data.variants,
             business,
-            branch: data.branch,
+            // branch: data.branch,
+            // branchQuantity: data.branchQuantity,
             totalQuantity: data.totalQuantity
         }
 
@@ -195,31 +140,31 @@ async function addProduct(req, res) {
             return res.status(404).json({ message: "Business Not Found" });
         }
 
-        const branchExist = await Branch.findOne(
-            {
-                branchCode: data.branch,
-                business: business
-            }
-        )
+        // const branchExist = await Branch.findOne(
+        //     {
+        //         branchCode: data.branch,
+        //         business: business
+        //     }
+        // )
 
-        if(!branchExist){
-            return res.status(404).json({message: "Branch Not Found!"})
-        }
+        // if(!branchExist){
+        //     return res.status(404).json({message: "Branch Not Found!"})
+        // }
 
 
         const product = new Product(productData);
         const newProduct = await product.save();
 
-        const assignProductToBranch = await Branch.findOneAndUpdate(
-            {
-                business: business,
-                branchCode: data.branch
-            },
-            {
-                $push: {products: newProduct._id}
-            }
+        // const assignProductToBranch = await Branch.findOneAndUpdate(
+        //     {
+        //         business: business,
+        //         branchCode: data.branch
+        //     },
+        //     {
+        //         $push: {products: newProduct._id}
+        //     }
             
-        )
+        // )
 
         res.status(201).json({
             newProduct,
@@ -231,6 +176,7 @@ async function addProduct(req, res) {
         res.status(400).json({message: error.message})
     }
 }
+
 
 async function updateProductById(req, res) {
     const { productId } = req.query;
@@ -258,23 +204,47 @@ async function updateProductById(req, res) {
             filePaths = [...existingImagePaths, ...filePaths];
         }
 
+        let totalNewQuantity;
+        if(data.branchQuantity > product.branchQuantity){
+            const changedBranchQuantity = data.branchQuantity - product.branchQuantity;
+            totalNewQuantity = changedBranchQuantity + data.totalQuantity;
+        }
+        else if (data.branchQuantity < product.branchQuantity){
+            const changedBranchQuantity = product.branchQuantity - data.branchQuantity;
+            totalNewQuantity = data.totalQuantity - changedBranchQuantity;
+        }
+        else {
+            totalNewQuantity = data.totalQuantity
+        }
+        
+
         const updatedProduct = await Product.findByIdAndUpdate(
             productId,
             {
                 $set: {
                     title: data.title,
                     description: data.description,
+                    branch: data.branch,
                     imagePath: filePaths,
                     price: data.price,
                     category: data.category,
                     subCategory: data.subCategory,
                     productType: data.productType,
                     sku: data.sku,
+                    branchQuantity: data.branchQuantity,
+                    totalQuantity: totalNewQuantity,
                     variants: data.variants,
                 },
             },
             { new: true } 
         );
+
+        const addProductInBranch = await Branch.findOneAndUpdate(
+            { branchCode: data.branch },
+            { $addToSet: { products: productId } }, 
+            { new: true }
+        );
+
 
         res.status(200).json({
             updatedProduct,
@@ -333,7 +303,6 @@ async function deleteProductFromBranch(req, res) {
 module.exports = {
     getProductbyId: getProductbyId,
     viewBusinessProductsbyId: viewBusinessProductsbyId,
-    viewBranchProductsById: viewBranchProductsById,
     addProduct: addProduct,
     updateProductById: updateProductById,
     deleteProductById: deleteProductById,

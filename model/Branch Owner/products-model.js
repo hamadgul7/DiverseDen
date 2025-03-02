@@ -85,9 +85,14 @@ const productSchema = new mongoose.Schema(
             ref: "Business",
         },
 
-        branch: {
-            type: String,
-            required: [true, "Branch Code is required"]
+        // branch: {
+        //     type: String,
+        //     required: [true, "Branch Code is required"]
+        // },
+
+        totalAssignedQuantity: { 
+            type: Number, 
+            default: 0 
         },
 
         totalQuantity: {

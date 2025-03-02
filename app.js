@@ -6,6 +6,7 @@ const subscriptionRoute = require('./routes/subscriptionPlans-route');
 const planStripePaymentRoute = require('./routes/stripePayment-routes');
 const branchOwnerBusinessRoute = require('./routes/Branch Owner/business-routes');
 const branchOwnerBranchRoute = require('./routes/Branch Owner/branch-routes');
+const branchOwnerBranchProductRoute = require('./routes/Branch Owner/branchProduct-routes');
 const branchOwnerSalespersonRoute = require('./routes/Branch Owner/salesperson-routes');
 const branchOwnerProductRoute = require('./routes/Branch Owner/product-routes');
 const customerCartRoute = require('./routes/Customer/cart-routes');
@@ -31,6 +32,7 @@ app.use(branchOwnerBusinessRoute);
 app.use(branchOwnerBranchRoute);
 app.use('/branchOwner',branchOwnerSalespersonRoute);
 app.use('/branchOwner',branchOwnerProductRoute);
+app.use('/branchOwner',branchOwnerBranchProductRoute);
 app.use('/customer',customerCartRoute);
 app.use('/customer',customerProductsRoute);
 app.use(orderRoutes)
