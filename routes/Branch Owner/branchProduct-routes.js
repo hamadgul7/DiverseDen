@@ -5,5 +5,6 @@ const router = express.Router();
 
 router.get('/viewBranchProductsById', verifyToken, branchProductController.viewBranchProductsById);
 router.post('/assignProductToBranch', verifyToken, branchProductController.assignProductToBranch);
+router.get('/calculateVariantRemainings', verifyToken, branchProductController.calculateVariantRemainings);
 
 module.exports = router;
