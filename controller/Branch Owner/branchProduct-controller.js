@@ -16,7 +16,6 @@ async function viewBranchProductsById(req, res) {
             return res.status(400).json({ message: "PageNo and PageLimit must be positive integers" });
         }
 
-        // Fetch branch with populated products
         const branch = await Branch.findById(branchId).populate("products");
         if (!branch) {
             return res.status(404).json({ message: "Branch not found" });
@@ -78,7 +77,7 @@ async function viewBranchProductsById(req, res) {
         const totalPages = Math.ceil(totalProducts / pageLimit);
         let nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
         let previousPage = pageNumber > 1 ? pageNumber - 1 : null;
-
+        console.log(allProducts)
         res.status(200).json({
             products: allProducts,
             meta: {
@@ -220,86 +219,89 @@ async function assignProductToBranch(req, res){
 }
 
 async function calculateVariantRemainings(req, res) {
-    try {
-        const { productId } = req.query;
-        console.log("Product ID:", productId);
-
-        // Validate productId
-        if (!mongoose.Types.ObjectId.isValid(productId)) {
-            return res.status(400).json({ message: "Invalid product ID" });
-        }
-
-        // Find the product
-        const product = await Product.findById(productId);
-        if (!product) {
-            return res.status(404).json({ message: "Product not found" });
-        }
-
-        // Aggregate assigned quantities for all variants in branches
-        const assignedQuantities = await BranchProduct.aggregate([
-            { $match: { product: new mongoose.Types.ObjectId(productId) } },
-            { $unwind: "$variants" }, // Flatten variants array
-            { $unwind: "$variants.colors" }, // Flatten colors array within variants
-            {
-                $group: {
-                    _id: {
-                        size: "$variants.size",
-                        material: "$variants.material",
-                        color: "$variants.colors.color"
-                    },
-                    assignedQuantity: { $sum: "$variants.colors.quantity" }
-                }
+        try {
+            const { productId } = req.query;
+            console.log("Product ID:", productId);
+    
+            if (!mongoose.Types.ObjectId.isValid(productId)) {
+                return res.status(400).json({ message: "Invalid product ID" });
             }
-        ]);
-
-        console.log("Assigned Quantities from Aggregation:", assignedQuantities);
-
-        // Convert aggregated result into a lookup object
-        const assignedMap = new Map();
-        assignedQuantities.forEach(({ _id, assignedQuantity }) => {
-            const key = `${_id.size}-${_id.material}-${_id.color}`;
-            assignedMap.set(key, assignedQuantity);
-        });
-
-        console.log("Assigned Map:", assignedMap);
-
-        // Compute remaining quantities for each variant
-        const remainingVariants = product.variants.map((variant) => {
-            const remainingColors = variant.colors.map((color) => {
-                const key = `${variant.size}-${variant.material}-${color.color}`;
-                const assignedQuantity = assignedMap.get(key) || 0; // Default to 0 if no assigned quantity
-                const remainingQuantity = color.quantity - assignedQuantity;
-
+    
+            const product = await Product.findById(productId);
+            if (!product) {
+                return res.status(404).json({ message: "Product not found" });
+            }
+    
+            const assignedQuantities = await BranchProduct.aggregate([
+                { $match: { product: new mongoose.Types.ObjectId(productId) } },
+                { $unwind: "$variants" },
+                { $unwind: { path: "$variants.colors", preserveNullAndEmptyArrays: true } },
+                {
+                    $group: {
+                        _id: {
+                            size: "$variants.size",
+                            material: "$variants.material",
+                            color: "$variants.colors.color" || "No Colors Assigned"
+                        },
+                        assignedQuantity: { $sum: "$variants.colors.quantity" }
+                    }
+                }
+            ]);
+    
+            console.log("Assigned Quantities from Aggregation:", assignedQuantities);
+    
+            const assignedMap = new Map();
+            assignedQuantities.forEach(({ _id, assignedQuantity }) => {
+                const key = `${_id.size}-${_id.material}-${_id.color}`;
+                assignedMap.set(key, assignedQuantity || 0);
+            });
+    
+            console.log("Assigned Map:", assignedMap);
+    
+            const remainingVariants = product.variants.map((variant) => {
+                let totalRemaining = variant.variantTotal;
+    
+                const remainingColors = variant.colors.length > 0
+                    ? variant.colors.map((color) => {
+                        const key = `${variant.size}-${variant.material}-${color.color}`;
+                        const assignedQuantity = assignedMap.get(key) || 0;
+                        const remainingQuantity = color.quantity - assignedQuantity;
+                        totalRemaining -= assignedQuantity;
+    
+                        return {
+                            color: color.color,
+                            assignedQuantity,
+                            remainingQuantity: Math.max(remainingQuantity, 0)
+                        };
+                    })
+                    : [{
+                        color: "No Colors Assigned",
+                        assignedQuantity: 0,
+                        remainingQuantity: Math.max(totalRemaining, 0)
+                    }];
+    
                 return {
-                    color: color.color,
-                    remainingQuantity: Math.max(remainingQuantity, 0) // Ensure no negative values
+                    size: variant.size,
+                    material: variant.material,
+                    colors: remainingColors,
+                    totalRemaining: Math.max(totalRemaining, 0)
                 };
             });
-
-            return {
-                size: variant.size,
-                material: variant.material,
-                colors: remainingColors,
-                totalRemaining: remainingColors.reduce((sum, c) => sum + c.remainingQuantity, 0)
-            };
-        });
-
-        console.log("Remaining Variants:", remainingVariants);
-
-        // Send response
-        res.json({
-            productId,
-            productTitle: product.title,
-            category: product.category,
-            price: product.price,
-            totalQuantity: product.totalQuantity,
-            remainingVariants
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
+    
+            console.log("Remaining Variants:", remainingVariants);
+    
+            res.json({
+                productId,
+                productTitle: product.title,
+                category: product.category,
+                price: product.price,
+                totalQuantity: product.totalQuantity,
+                remainingVariants
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: "Internal Server Error", error: error.message });
+        }
 }
 
 module.exports = {
