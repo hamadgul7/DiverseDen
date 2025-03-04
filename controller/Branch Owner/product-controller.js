@@ -1,6 +1,7 @@
 const path = require('path');
 const Product = require('../../model/Branch Owner/products-model');
 const { Business, Branch } = require('../../model/Branch Owner/business-model');
+const BranchProduct = require('../../model/Branch Owner/branchProduct-model')
 
 // function capitalizeFirstLetter(string) {
 //     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -279,24 +280,52 @@ async function deleteProductById(req, res){
 
 async function deleteProductFromBranch(req, res) {
     const { branchId, productId } = req.body;
-    try{
-        const deleteProductFromBranch = await Branch.findByIdAndUpdate(
+
+    try {
+        // Check if branch exists
+        const branch = await Branch.findById(branchId);
+        if (!branch) {
+            return res.status(404).json({ message: "Branch not found" });
+        }
+
+        // Check if product exists in the branch
+        if (!branch.products.includes(productId)) {
+            return res.status(400).json({ message: "Product is not assigned to this branch" });
+        }
+
+        // Remove product from branch
+        await Branch.findByIdAndUpdate(
             branchId,
-            {
-                $pull: {products: productId}
-            }
+            { $pull: { products: productId } },
+            { new: true }
         );
 
-        const updateProductBranch = await Product.findByIdAndUpdate(
-            productId,
-            { $set: { branch: null } },
-        );
-        
+        // Find BranchProduct associated with the branch and product
+        const branchProduct = await BranchProduct.findOne({ branchCode: branch.branchCode, product: productId });
 
-        res.status(200).json({message: "Product Deleted Successfully"})
-    }
-    catch(error){
-        res.status(400).json({ message: error.message })
+        if (branchProduct) {
+            // Get total assigned quantity in this branch
+            const totalBranchQuantity = branchProduct.totalBranchQuantity;
+
+            // Update Product model:
+            await Product.findByIdAndUpdate(
+                productId,
+                {
+                    $inc: { totalAssignedQuantity: -totalBranchQuantity }, // Subtract assigned quantity
+                    $pull: { branch: branch.branchCode } // Remove branchCode from Product model
+                },
+                { new: true }
+            );
+
+            // Delete the BranchProduct entry
+            await BranchProduct.findByIdAndDelete(branchProduct._id);
+        }
+
+        res.status(200).json({ message: "Product removed from branch successfully" });
+
+    } catch (error) {
+        console.error("Error removing product from branch:", error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
 }
 

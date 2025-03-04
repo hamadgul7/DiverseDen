@@ -247,6 +247,12 @@ async function assignProductToBranch(req, res){
     
         // ✅ Update `totalAssignedQuantity` correctly
         productDoc.totalAssignedQuantity += newTotalAssignedQuantity;
+    
+        // ✅ Add branch code to `productDoc.branch` if it's not already present
+        if (!productDoc.branch.includes(branchCode)) {
+            productDoc.branch.push(branchCode);
+        }
+    
         await productDoc.save();
     
         // Update the branch record
@@ -262,6 +268,7 @@ async function assignProductToBranch(req, res){
         console.error("Error assigning product:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
+    
     
     //last latest chalne wala 
     // masala ya hai dobara assign pa remaning barha raha hai q ke wo totally assign quantity ko change kar raha hai nah ke porana ko is ke sath milae

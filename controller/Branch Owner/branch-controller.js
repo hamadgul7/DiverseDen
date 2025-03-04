@@ -1,5 +1,8 @@
 const { Branch, Business } = require('../../model/Branch Owner/business-model');
+const Product = require('../../model/Branch Owner/products-model');
 const Salesperson = require('../../model/Branch Owner/salesperson-model');
+const BranchProduct = require('../../model/Branch Owner/branchProduct-model');
+const User = require('../../model/auth-model');
 
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -101,9 +104,9 @@ async function viewBranches(req, res) {
 }
 
 async function createBranch(req, res){
-    const {branchCode, name, city, address, contactNo, emailAddress, business} = req.body;
+    const { branchCode, name, city, address, contactNo, emailAddress, business } = req.body;
 
-    try{
+    try {
         const capitalizedData = {
             branchCode: capitalizeFirstLetter(branchCode),
             name: capitalizeFirstLetter(name),
@@ -112,55 +115,71 @@ async function createBranch(req, res){
             contactNo,
             emailAddress,
             business,
-        }
+        };
 
-        const businessExist = await Business.findById(business);
-        if(!businessExist){
+        const businessExist = await Business.findById(business).populate("user"); 
+        if (!businessExist) {
             return res.status(404).json({ message: "Business Not Found" });
         }
 
-        const branchExist = await Branch.findOne({
-            branchCode: branchCode,
-            business: business
-        });
+        const businessOwner = await User.findById(businessExist.user).populate("activePlan");
 
-        if(branchExist){
-            return res.status(409).json({ message: "Branch already exists within this brand." });
+        if (!businessOwner) {
+            return res.status(404).json({ message: "Business owner not found." });
+        }
+
+        if (!businessOwner.activePlan) {
+            return res.status(403).json({ message: "You must have an active subscription plan to add branches." });
+        }
+
+        if (businessOwner.planExpiry && new Date() > new Date(businessOwner.planExpiry)) {
+            return res.status(403).json({ message: "Your subscription has expired. Please renew your plan." });
+        }
+
+        const branchLimit = getBranchLimit(businessOwner.activePlan.name);
+
+        const branchCount = await Branch.countDocuments({ business });
+
+        if (branchCount >= branchLimit) {
+            return res.status(403).json({ message: `Branch limit reached! Your plan allows only ${branchLimit} branches.` });
+        }
+
+        const branchExist = await Branch.findOne({ branchCode: branchCode, business: business });
+        if (branchExist) {
+            return res.status(409).json({ message: "Branch already exists within this business." });
         }
 
         const branch = new Branch(capitalizedData);
-
         const newBranch = await branch.save();
 
-        const newBranchInfo = await Branch.findOne({ business: business }).sort({ createdAt: -1 });
-        if(!newBranchInfo){
-            return res.status(404).json({message: "No Business Assign to the branch"})
-        }
-        
-        const assignBranchtoBusiness = await Business.findByIdAndUpdate(
+        const assignBranchToBusiness = await Business.findByIdAndUpdate(
             business,
-            { 
-                $push: { branches: newBranchInfo._id }
-            },
-            { 
-                new: true, 
-                runValidators: true 
-            }
-        )
+            { $push: { branches: newBranch._id } },
+            { new: true, runValidators: true }
+        );
 
-        if(!assignBranchtoBusiness){
+        if (!assignBranchToBusiness) {
             return res.status(404).json({ message: "Business Not Found" });
         }
 
         res.status(201).json({
             newBranch,
             message: "Branch Created Successfully"
-        })
-    }
-    catch(error){
-        res.status(400).json({message: error.message});
+        });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 }
+
+const getBranchLimit = (planName) => {
+    const limits = {
+        // "Free": 1,
+        "Silver": 5,
+        "Gold": 10,
+        "Platinum": 15
+    };
+    return limits[planName] || 0; 
+};
 
 async function updateBranch(req, res){
     const {branchCode, name, city, address, contactNo, emailAddress, business} = req.body;
@@ -209,36 +228,56 @@ async function updateBranch(req, res){
 
 async function deleteBranch(req, res) {
     const { branchCode, business } = req.body;
-    try{
-        const branch = await Branch.findOneAndDelete(
-            { 
-                branchCode: branchCode, 
-                business: business 
-            }
-        );
 
-        if(!branch){
-            return res.status(404).json({message: "Branch Not Found!"})
+    try {
+        // Find and delete the branch
+        const branch = await Branch.findOneAndDelete({ branchCode, business });
+
+        if (!branch) {
+            return res.status(404).json({ message: "Branch Not Found!" });
         }
 
         const branchId = branch._id;
-        const updatedBusiness = await Business.findByIdAndUpdate(
+
+        // Remove branch reference from the Business model
+        await Business.findByIdAndUpdate(
             business,
-            {
-                $pull: { branches: branchId } 
-            }
+            { $pull: { branches: branchId } }
         );
 
-        const deleteSalesperson = await Salesperson.findOneAndDelete({_id: branch.salesperson})
+        // Find all BranchProduct entries linked to this branch
+        const branchProducts = await BranchProduct.find({ branchCode });
 
-        res.status(200).json({
-            // updatedBusiness,
-            message: "Branch Deleted Successfully"
-        });
-        
-    }
-    catch(error){
-        res.status(400).json({message: error.message})
+        for (const branchProduct of branchProducts) {
+            // Subtract assigned quantity from the Product model
+            await Product.findByIdAndUpdate(
+                branchProduct.product,
+                {
+                    $inc: { totalAssignedQuantity: -branchProduct.totalBranchQuantity },
+                    $pull: { branch: branchCode } // Remove branchCode from Product's branch array
+                }
+            );
+
+            // Delete the BranchProduct entry
+            await BranchProduct.findByIdAndDelete(branchProduct._id);
+        }
+
+        // Remove all product references from the Branch model
+        await Branch.updateMany(
+            { _id: branchId },
+            { $set: { products: [] } }
+        );
+
+        // Delete the assigned Salesperson (if any)
+        if (branch.salesperson) {
+            await Salesperson.findByIdAndDelete(branch.salesperson);
+        }
+
+        res.status(200).json({ message: "Branch and associated products deleted successfully" });
+
+    } catch (error) {
+        console.error("Error deleting branch:", error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
 }
 

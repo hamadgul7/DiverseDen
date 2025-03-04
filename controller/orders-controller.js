@@ -120,7 +120,46 @@ async function getOrders(req, res){
     }
 }
 
+async function updateOrderStatus(req, res){
+    const { orderId, status } = req.body;
+    try{
+        if (!orderId) {
+            return res.status(400).json({ message: "Invalid Order Id" });
+        }
+
+        const order = await Order.findByIdAndUpdate(orderId,
+            {
+                $set: {status: status}
+            }
+        )
+
+        res.status(201).json({
+            message: "Status Updated Successfully"
+        })
+
+    } catch(error){
+        res.status(400).json({message: error.message})
+    }
+}
+
+async function deleteOrder(req, res){
+    const { orderId } = req.body;
+    try{
+        if(!orderId){
+            res.status(400).json({ message: "Invalid Order ID" })
+        }
+
+        const order = await Order.findByIdAndDelete(orderId);
+        res.status(201).json({ message: "Order Deleted Successfully" })
+
+    } catch(error){
+        res.status(400).json({ message: error.message })
+    }
+}
+
 module.exports = {
     addOrderDetails: addOrderDetails,
-    getOrders: getOrders
+    getOrders: getOrders,
+    updateOrderStatus: updateOrderStatus,
+    deleteOrder: deleteOrder
 }
