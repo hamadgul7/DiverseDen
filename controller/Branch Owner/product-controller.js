@@ -178,7 +178,6 @@ async function addProduct(req, res) {
     }
 }
 
-
 async function updateProductById(req, res) {
     const { productId } = req.query;
     const data = JSON.parse(req.body.data);

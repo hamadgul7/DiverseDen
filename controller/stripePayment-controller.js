@@ -30,11 +30,12 @@ async function planPayment(req, res){
         );
 
         const expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + 1);
+        expiryDate.setDate(expiryDate.getDate() + 30);
 
         const updatedUser = await User.findByIdAndUpdate(
             userId, 
             {
+                planActivation: new Date(),
                 activePlan: plan._id, 
                 planExpiry: expiryDate, 
             },

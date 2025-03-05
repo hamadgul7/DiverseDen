@@ -11,7 +11,12 @@ const branchOwnerSalespersonRoute = require('./routes/Branch Owner/salesperson-r
 const branchOwnerProductRoute = require('./routes/Branch Owner/product-routes');
 const customerCartRoute = require('./routes/Customer/cart-routes');
 const customerProductsRoute = require('./routes/Customer/customerProduct-routes')
-const orderRoutes = require('./routes/order-routes')
+const orderRoutes = require('./routes/order-routes');
+const customerProductReviewRoutes = require('./routes/Customer/customerProductReview-routes');
+const businessProductReviewRoutes = require('./routes/Branch Owner/businessProductReviews-routes');
+const businessSubscriptionRoutes = require('./routes/Branch Owner/businessSubscription-routes');
+
+
 const cors = require('cors');
 
 const app = express();
@@ -35,7 +40,10 @@ app.use('/branchOwner',branchOwnerProductRoute);
 app.use('/branchOwner',branchOwnerBranchProductRoute);
 app.use('/customer',customerCartRoute);
 app.use('/customer',customerProductsRoute);
-app.use(orderRoutes)
+app.use(orderRoutes);
+app.use('/customer', customerProductReviewRoutes);
+app.use('/branchOwner', businessProductReviewRoutes);
+app.use('/branchOwner', businessSubscriptionRoutes)
 
 
 

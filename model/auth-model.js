@@ -41,6 +41,12 @@ const userSchema = new mongoose.Schema(
       ref: "Plan",
       default: null, 
     },
+
+    planActivation: {
+      type: Date,
+      default: null
+    },
+
     planExpiry: {
       type: Date, 
       default: null, 
