@@ -173,6 +173,30 @@ try {
     // }
 }
 
+async function viewBranchProductsDetail(req, res){
+    const { branchCode, productId } = req.body;
+    try{
+        if(!branchCode || !productId){
+            return res.status(400).json({ message: "Invalid Branch Code or Product Id" })
+        }
+
+        const productDetails = await BranchProduct.findOne(
+            {
+                branchCode: branchCode,
+                product: productId
+            }
+        ).populate('product')
+
+        res.status(200).json({ 
+            productDetails,
+            message: "Branch Product Details Fetched Successfully"
+        })
+
+    } catch(error){
+        res.status(400).json({ message: error.message })
+    } 
+}
+
 async function assignProductToBranch(req, res){
     try {
         const { branchCode, product } = req.body;  // Extract product data
@@ -590,7 +614,8 @@ async function calculateVariantRemainings(req, res) {
 module.exports = {
     viewBranchProductsById: viewBranchProductsById,
     assignProductToBranch: assignProductToBranch,
-    calculateVariantRemainings: calculateVariantRemainings
+    calculateVariantRemainings: calculateVariantRemainings,
+    viewBranchProductsDetail: viewBranchProductsDetail
 }
 
 

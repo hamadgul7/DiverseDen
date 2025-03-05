@@ -146,7 +146,7 @@ async function deleteOrder(req, res){
     const { orderId } = req.body;
     try{
         if(!orderId){
-            res.status(400).json({ message: "Invalid Order ID" })
+            return res.status(400).json({ message: "Invalid Order ID" })
         }
 
         const order = await Order.findByIdAndDelete(orderId);
