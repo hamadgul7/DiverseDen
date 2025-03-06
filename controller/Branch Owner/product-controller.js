@@ -96,6 +96,46 @@ async function viewBusinessProductsbyId(req, res) {
     }
 }
 
+async function viewBusinessProductsbyIdWithoutPagination(req, res) {
+    const { business } = req.query;
+    
+    try {
+        if (!business) {
+            return res.status(404).json({ message: "BusinessId not available" });
+        }
+
+        const businessProducts = await Product.find({ business });
+
+        if (businessProducts.length === 0) {
+            return res.status(200).json({ message: "No Products found!" });
+        }
+
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+        const productsWithImages = businessProducts.map(product => {
+            if (Array.isArray(product.imagePath)) {
+                product.imagePath = product.imagePath.map(image => `${baseUrl}/${image}`);
+            }
+
+            return {
+                ...product.toObject(),
+                remainingQuantity: product.totalQuantity - (product.totalAssignedQuantity || 0),
+                variants: product.variants.map(variant => ({
+                    ...variant,
+                    remainingQuantity: variant.variantTotal - (variant.assignedQuantity || 0) 
+                }))
+            };
+        });
+
+        res.status(200).json({
+            businessProducts: productsWithImages,
+            message: "Products Retrieved Successfully"
+        });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+}
+
 
 async function addProduct(req, res) {
     const data = JSON.parse(req.body.data);
@@ -334,6 +374,7 @@ module.exports = {
     addProduct: addProduct,
     updateProductById: updateProductById,
     deleteProductById: deleteProductById,
-    deleteProductFromBranch: deleteProductFromBranch
+    deleteProductFromBranch: deleteProductFromBranch,
+    viewBusinessProductsbyIdWithoutPagination: viewBusinessProductsbyIdWithoutPagination
 }
 

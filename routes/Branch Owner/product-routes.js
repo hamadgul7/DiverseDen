@@ -25,6 +25,7 @@ const upload = multer({ storage });
 router.get('/getProductById', verifyToken, productController.getProductbyId);
 router.get('/viewBusinessProductsById',verifyToken, productController.viewBusinessProductsbyId); 
 // router.get('/viewBranchProductsById', verifyToken, productController.viewBranchProductsById);
+router.get('/viewBusinessProductsbyIdWithoutPagination', productController.viewBusinessProductsbyIdWithoutPagination)
 router.post('/addProduct', verifyToken, upload.array("media", 10), productController.addProduct);
 router.post('/updateProductById', verifyToken, upload.array("media", 10), productController.updateProductById);
 router.post('/deleteProductById', verifyToken, productController.deleteProductById);
