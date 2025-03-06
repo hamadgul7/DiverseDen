@@ -48,50 +48,50 @@ async function createSaleEvent(req, res){
 }
 
 async function viewSaleEvents(req, res){
-    
-try {
-    const { businessId } = req.query; // Get businessId from query parameters
+    try {
+        const { businessId } = req.query; // Get businessId from query parameters
 
-    if (!businessId) {
-        return res.status(400).json({ message: "Business ID is required" });
-    }
-
-    const saleEvents = await SaleEvent.find({ businessId }).populate("products.productId");
-
-    if (saleEvents.length === 0) {
-        return res.status(404).json({ message: "No sale events found for this business" });
-    }
-
-    const currentDate = new Date(); // Get current date
-
-    const formattedEvents = saleEvents.map(event => {
-        const startDate = new Date(event.startDate);
-        const endDate = new Date(event.endDate);
-
-        // Determine status based on date
-        let status = "Upcoming";
-        if (currentDate >= startDate && currentDate <= endDate) {
-            status = "Ongoing";
-        } else if (currentDate > endDate) {
-            status = "Expired";
+        if (!businessId) {
+            return res.status(400).json({ message: "Business ID is required" });
         }
 
-        return {
-            name: event.name,
-            description: event.description,
-            duration: `${moment(event.startDate).format("MMM D, YYYY")} - ${moment(event.endDate).format("MMM D, YYYY")}`,
-            discount: event.discountType === "percentage" 
-                ? `${event.discountValue}% Off` 
-                : `$${event.discountValue} Off`,
-            products: event.products.length,
-            status // Include status in response
-        };
-    });
+        const saleEvents = await SaleEvent.find({ businessId }).populate("products.productId");
 
-    res.status(200).json(formattedEvents);
-} catch (error) {
-    res.status(500).json({ message: "Error fetching sale events", error: error.message });
-}
+        if (saleEvents.length === 0) {
+            return res.status(404).json({ message: "No sale events found for this business" });
+        }
+
+        const currentDate = new Date(); // Get current date
+
+        const formattedEvents = saleEvents.map(event => {
+            const startDate = new Date(event.startDate);
+            const endDate = new Date(event.endDate);
+
+            // Determine status based on date
+            let status = "Upcoming";
+            if (currentDate >= startDate && currentDate <= endDate) {
+                status = "Ongoing";
+            } else if (currentDate > endDate) {
+                status = "Expired";
+            }
+
+            return {
+                eventId: event._id, // Include the event ID
+                name: event.eventName, // Ensure correct field name
+                description: event.description,
+                duration: `${moment(event.startDate).format("MMM D, YYYY")} - ${moment(event.endDate).format("MMM D, YYYY")}`,
+                discount: event.discountType === "percentage" 
+                    ? `${event.discountValue}% Off` 
+                    : `$${event.discountValue} Off`,
+                products: event.products.length,
+                status // Include status in response
+            };
+        });
+
+        res.status(200).json(formattedEvents);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching sale events", error: error.message });
+    }
 }
 
 async function viewASaleEventById(req, res){
