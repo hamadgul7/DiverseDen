@@ -1,7 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 const stripe = require('stripe')("sk_test_51QOJ4oDZzPFomXhELbCh0GyE8sZhUC8XbEMxBKsK9cZtvKzbIZJh45yzTesWu0sXlGAEoh0ndkJKW44ANd98VTBd0050p9NpIL");
 const User = require('../model/auth-model');
-const Plan = require('../model/subscriptionPlans-model')
+const Plan = require('../model/subscriptionPlans-model');
+const moment = require("moment");
 
 async function planPayment(req, res){
     const { planName, token , userId} = req.body;   
@@ -29,13 +30,14 @@ async function planPayment(req, res){
             }
         );
 
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + 30);
+
+        const expiryDate = moment().add(30, "days").format("MMMM Do, YYYY");
+        const activationDate = moment().format("MMMM Do, YYYY");
 
         const updatedUser = await User.findByIdAndUpdate(
             userId, 
             {
-                planActivation: new Date(),
+                planActivation: activationDate,
                 activePlan: plan._id, 
                 planExpiry: expiryDate, 
             },

@@ -43,12 +43,12 @@ const userSchema = new mongoose.Schema(
     },
 
     planActivation: {
-      type: Date,
+      type: String,
       default: null
     },
 
     planExpiry: {
-      type: Date, 
+      type: String, 
       default: null, 
     },
 
