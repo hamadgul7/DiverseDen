@@ -49,13 +49,22 @@ async function createSaleEvent(req, res){
 
 async function viewSaleEvents(req, res){
     try {
-        const { businessId } = req.query; // Get businessId from query parameters
+        const { businessId, pageNo, limit } = req.query; // Get businessId, page, and limit from query parameters
 
         if (!businessId) {
             return res.status(400).json({ message: "Business ID is required" });
         }
 
-        const saleEvents = await SaleEvent.find({ businessId }).populate("products.productId");
+        const pageNumber = parseInt(pageNo, 10);
+        const limitNumber = parseInt(limit, 10);
+        const skip = (pageNumber - 1) * limitNumber;
+
+        // Fetch sale events with pagination
+        const totalEvents = await SaleEvent.countDocuments({ businessId });
+        const saleEvents = await SaleEvent.find({ businessId })
+            .populate("products.productId")
+            .skip(skip)
+            .limit(limitNumber);
 
         if (saleEvents.length === 0) {
             return res.status(404).json({ message: "No sale events found for this business" });
@@ -77,7 +86,7 @@ async function viewSaleEvents(req, res){
 
             return {
                 eventId: event._id, // Include the event ID
-                name: event.eventName, // Ensure correct field name
+                name: event.name, // Ensure correct field name
                 description: event.description,
                 duration: `${moment(event.startDate).format("MMM D, YYYY")} - ${moment(event.endDate).format("MMM D, YYYY")}`,
                 discount: event.discountType === "percentage" 
@@ -88,7 +97,12 @@ async function viewSaleEvents(req, res){
             };
         });
 
-        res.status(200).json(formattedEvents);
+        res.status(200).json({
+            totalEvents,
+            currentPage: pageNumber,
+            totalPages: Math.ceil(totalEvents / limitNumber),
+            events: formattedEvents
+        });
     } catch (error) {
         res.status(500).json({ message: "Error fetching sale events", error: error.message });
     }
@@ -96,7 +110,7 @@ async function viewSaleEvents(req, res){
 
 async function viewASaleEventById(req, res){
     try {
-        const { eventId } = req.query; // Get event ID from URL params
+        const { eventId } = req.query; 
 
         if (!eventId) {
             return res.status(400).json({ message: "Event ID is required" });
