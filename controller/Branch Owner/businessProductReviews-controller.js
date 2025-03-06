@@ -1,7 +1,7 @@
 const ProductReviews = require('../../model/productReviews-model')
 
 async function  viewBusinessProductReview(req, res){
-    const { businessId, pageNo, limit } = req.query; 
+    const { businessId, pageNo, limit } = req.query;
 
     try {
         if (!businessId) {
@@ -17,6 +17,7 @@ async function  viewBusinessProductReview(req, res){
 
         const skip = (pageNumber - 1) * pageLimit;
 
+        // Fetch reviews and total review count in parallel
         const [productReviews, totalReviews] = await Promise.all([
             ProductReviews.find({ businessId })
                 .populate({
@@ -28,16 +29,28 @@ async function  viewBusinessProductReview(req, res){
             ProductReviews.countDocuments({ businessId })
         ]);
 
-        if (!productReviews || productReviews.length === 0) {
-            return res.status(404).json({ message: "No Reviews Found!" });
+        // If no reviews found, return an empty array with pagination info
+        if (!productReviews.length) {
+            return res.status(200).json({
+                products: [], // Empty array instead of 404
+                meta: {
+                    totalReviews: 0,
+                    totalPages: 0,
+                    currentPage: pageNumber,
+                    pageLimit,
+                    nextPage: null,
+                    previousPage: pageNumber > 1 ? pageNumber - 1 : null
+                },
+                message: "No Reviews Found!"
+            });
         }
 
         const baseUrl = `${req.protocol}://${req.get("host")}`;
-
         const reviewsByProduct = {};
 
         productReviews.forEach((review) => {
             const productId = review.productId._id.toString();
+
             if (!reviewsByProduct[productId]) {
                 reviewsByProduct[productId] = {
                     productId,
