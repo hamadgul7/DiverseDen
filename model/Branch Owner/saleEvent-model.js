@@ -28,9 +28,8 @@ const saleEventSchema = new mongoose.Schema(
         },
 
         discountValue: { 
-            type: Number, 
+            type: String, 
             required: true, 
-            min: 0 
         },
 
         products: [
