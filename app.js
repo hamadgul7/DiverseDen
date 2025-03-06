@@ -15,6 +15,7 @@ const orderRoutes = require('./routes/order-routes');
 const customerProductReviewRoutes = require('./routes/Customer/customerProductReview-routes');
 const businessProductReviewRoutes = require('./routes/Branch Owner/businessProductReviews-routes');
 const businessSubscriptionRoutes = require('./routes/Branch Owner/businessSubscription-routes');
+const businessSaleEventRoutes = require('./routes/Branch Owner/saleEvent-routes')
 
 
 const cors = require('cors');
@@ -43,7 +44,8 @@ app.use('/customer',customerProductsRoute);
 app.use(orderRoutes);
 app.use('/customer', customerProductReviewRoutes);
 app.use('/branchOwner', businessProductReviewRoutes);
-app.use('/branchOwner', businessSubscriptionRoutes)
+app.use('/branchOwner', businessSubscriptionRoutes);
+app.use('/branchOwner', businessSaleEventRoutes);
 
 
 
