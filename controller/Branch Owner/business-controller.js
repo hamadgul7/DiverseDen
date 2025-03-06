@@ -43,7 +43,39 @@ async function addBusiness(req,res){
     }
 }
 
+async function verifyBusiness(req, res){
+    const { businessId } = req.query;
+    try {
+        const business = await Business.findById(businessId);
+        console.log(business)
+
+        let businessDetails = [];
+
+        if (business) {
+            businessDetails.push({
+                _id: business._id,
+                name: business.name,
+                description: business.description,
+                branches: business.branches,
+                user: business.user,
+                accountHolderName: business.accountHolderName,
+                bankName: business.bankName,
+                accountNumber: business.accountNumber,
+                createdAt: business.createdAt,
+                updatedAt: business.updatedAt
+            });
+        }
+
+        return res.json(businessDetails);
+
+    } catch (error) {
+        console.error("Error fetching business details:", error);
+        return res.status(500).json({ error: "Something went wrong" });
+    }
+}
+
 
 module.exports = {
-    addBusiness: addBusiness
+    addBusiness: addBusiness,
+    verifyBusiness: verifyBusiness
 }
