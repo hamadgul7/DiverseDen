@@ -51,15 +51,20 @@ async function addProductReview(req, res){
 
 async function viewProductReview(req, res){
     const { productId } = req.query;
+
     try {
         if (!productId) {
-            return res.status(400).json({ message: "Invalid Product Id" });
+            return res.status(400).json({ message: "Invalid Product ID" });
         }
 
         const productReviews = await ProductReviews.find({ productId });
 
-        if (!productReviews.length) { 
-            return res.status(200).json({ message: "No Reviews Found!" });
+        if (!productReviews.length) {
+            return res.status(200).json({
+                productReviews: [], 
+                averageRating: 0, 
+                message: "No Reviews Found!"
+            });
         }
 
         const totalRatings = productReviews.reduce((sum, review) => sum + review.rating, 0);

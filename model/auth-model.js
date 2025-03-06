@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
         type: String,
-        enum: ['Branch Owner', 'Rider', 'Customer'],
+        enum: ['Branch Owner', 'Rider', 'Customer', 'Salesperson'],
         required: [true, "Selecting Role is required"],
     },
 
