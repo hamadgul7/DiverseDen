@@ -1,17 +1,32 @@
 const ProductReviews = require('../../model/productReviews-model')
 
 async function  viewBusinessProductReview(req, res){
-    const { businessId } = req.body; 
+    const { businessId, pageNo, limit } = req.query; 
+
     try {
         if (!businessId) {
             return res.status(400).json({ message: "Invalid Business ID" });
         }
 
-        const productReviews = await ProductReviews.find({ businessId })
-            .populate({
-                path: "productId",
-                select: "title imagePath"
-            });
+        const pageNumber = parseInt(pageNo);
+        const pageLimit = parseInt(limit);
+
+        if (isNaN(pageNumber) || isNaN(pageLimit) || pageNumber < 1 || pageLimit < 1) {
+            return res.status(400).json({ message: "Invalid page number or limit" });
+        }
+
+        const skip = (pageNumber - 1) * pageLimit;
+
+        const [productReviews, totalReviews] = await Promise.all([
+            ProductReviews.find({ businessId })
+                .populate({
+                    path: "productId",
+                    select: "title imagePath"
+                })
+                .skip(skip)
+                .limit(pageLimit),
+            ProductReviews.countDocuments({ businessId })
+        ]);
 
         if (!productReviews || productReviews.length === 0) {
             return res.status(404).json({ message: "No Reviews Found!" });
@@ -40,6 +55,7 @@ async function  viewBusinessProductReview(req, res){
             reviewsByProduct[productId].reviewCount += 1;
             reviewsByProduct[productId].totalRating += review.rating;
             reviewsByProduct[productId].reviews.push({
+                _id: review._id, 
                 customerName: review.customerName,
                 rating: review.rating,
                 comment: review.comment,
@@ -49,11 +65,23 @@ async function  viewBusinessProductReview(req, res){
 
         Object.values(reviewsByProduct).forEach((product) => {
             product.averageRating = (product.totalRating / product.reviewCount).toFixed(1);
-            delete product.totalRating; 
+            delete product.totalRating;
         });
+
+        const totalPages = Math.ceil(totalReviews / pageLimit);
+        const nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
+        const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
 
         res.status(200).json({
             products: Object.values(reviewsByProduct),
+            meta: {
+                totalReviews,
+                totalPages,
+                currentPage: pageNumber,
+                pageLimit,
+                nextPage,
+                previousPage
+            },
             message: "Reviews Fetched Successfully"
         });
 
