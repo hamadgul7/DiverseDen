@@ -52,7 +52,35 @@ async function viewBusinessPlan(req, res) {
     }
 };
 
+async function cancelSubscriptionPlan(req, res){
+    const { userId } = req.body;
+    try {
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                activePlan: null, 
+                planActivation: null,
+                planExpiry: null
+            },
+            { new: true } 
+        );
+    
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+    
+        return res.status(200).json({ 
+            message: "Plan Cancelled successfully", 
+            user: updatedUser 
+        });
+    } catch (error) {
+        console.error("Error cancelling active plan:", error);
+        return res.status(500).json({ error: "Something went wrong" });
+    }
+}
+
 module.exports = {
-    viewBusinessPlan: viewBusinessPlan
+    viewBusinessPlan: viewBusinessPlan,
+    cancelSubscriptionPlan: cancelSubscriptionPlan
 }
 

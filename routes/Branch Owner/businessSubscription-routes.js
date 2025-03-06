@@ -5,5 +5,7 @@ const businessSubscriptionController = require('../../controller/Branch Owner/bu
 
 
 router.get('/viewSubscriptionPlan', verifyToken, businessSubscriptionController.viewBusinessPlan);
+router.post('/cancelSubscriptionPlan', verifyToken, businessSubscriptionController.cancelSubscriptionPlan)
+
 
 module.exports = router;
