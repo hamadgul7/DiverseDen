@@ -3,7 +3,7 @@ const moment = require('moment');
 
 const saleEventSchema = new mongoose.Schema(
     {
-        eventName: { 
+        name: { 
             type: String, 
             required: true 
         },
