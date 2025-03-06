@@ -35,8 +35,11 @@ const saleEventSchema = new mongoose.Schema(
 
         products: [
             {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Product'
+                productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+                name: String,
+                category: String,
+                price: Number,
+                discountedPrice: Number
             }
         ],
 

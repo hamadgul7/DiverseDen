@@ -73,6 +73,7 @@ async function cancelSubscriptionPlan(req, res){
             message: "Plan Cancelled successfully", 
             user: updatedUser 
         });
+        
     } catch (error) {
         console.error("Error cancelling active plan:", error);
         return res.status(500).json({ error: "Something went wrong" });
