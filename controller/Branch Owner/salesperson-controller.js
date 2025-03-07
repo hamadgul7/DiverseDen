@@ -107,6 +107,7 @@ async function addSalesperson(req, res){
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: "A user with this email already exists." });
 
+
         // Generate a 6-character password
         const generatedPassword = crypto.randomBytes(3).toString("hex");
         const hashedPassword = await bcrypt.hash(generatedPassword, 10);
@@ -193,6 +194,8 @@ async function deleteSalesperson(req, res){
     const { salespersonId } = req.body;
     try{
         const salesperson = await Salesperson.findOneAndDelete({_id: salespersonId});
+        
+        const deleteFromUsers = await User.findOneAndDelete({email: salesperson.email})
 
         if(!salesperson){
             return res.status(404).json({ message: "No Salesperson Found!" });

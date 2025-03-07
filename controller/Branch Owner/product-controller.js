@@ -136,7 +136,6 @@ async function viewBusinessProductsbyIdWithoutPagination(req, res) {
     }
 }
 
-
 async function addProduct(req, res) {
     const data = JSON.parse(req.body.data);
     const business = req.body.business;
