@@ -31,7 +31,8 @@ async function planPayment(req, res){
         );
 
 
-        const expiryDate = moment().add(30, "days").format("MMMM Do, YYYY");
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
         const activationDate = moment().format("MMMM Do, YYYY");
 
         const updatedUser = await User.findByIdAndUpdate(
