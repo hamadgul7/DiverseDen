@@ -1,7 +1,13 @@
-const { Business } = require('../../model/Branch Owner/business-model');
-const Plan = require('../../model/subscriptionPlans-model')
+const { Business, Branch } = require('../../model/Branch Owner/business-model');
+const Plan = require('../../model/subscriptionPlans-model');
+const Product = require('../../model/Branch Owner/products-model');
+const User = require('../../model/auth-model');
+const Order = require('../../model/orders-model');
+const Cart = require('../../model/Customer/cart-model');
+const ProductReviews = require('../../model/productReviews-model');
+const Salesperson = require('../../model/Branch Owner/salesperson-model');
+const SaleEvent = require('../../model/Branch Owner/saleEvent-model');
 
-const moment = require("moment");
 
 async function getAllBusinesses(req, res) {
   try {
@@ -119,16 +125,56 @@ async function getAllBusinesses(req, res) {
 }
 
 async function deleteBusinessById(req, res){
-    try{
-      
+  try {
+    const { businessId } = req.body;
+    const business = await Business.findByIdAndDelete(businessId);
+    console.log("Business deleted successfully.");
 
-    }catch(error){
+    const products = await Product.deleteMany({ business: businessId });
+    console.log("Products deleted successfully.");
+
+    const branches = await Branch.deleteMany({ business: businessId });
+    console.log("Branches deleted successfully.");
+
+    const users = await User.findOneAndDelete({ business: businessId });
+    console.log("User deleted successfully.");
+
+    const orders = await Order.deleteMany({ businessId });
+    console.log("Orders deleted successfully.");
+
+    const cartItems = await Cart.deleteMany({ productId: { $in: await Product.find({ business: businessId }).distinct("_id") } });
+    console.log("Cart items deleted successfully.");
+
+    const reviews = await ProductReviews.deleteMany({ businessId });
+    console.log("Product reviews deleted successfully.");
+
+    const salesperson = await Salesperson.deleteMany({ business: businessId });
+    console.log("Salespersons deleted successfully.");
+
+    const saleEvent = await SaleEvent.deleteMany({ businessId });
+    console.log("Sale events deleted successfully.");
+
+    res.status(201).json({
+      business,
+      products,
+      branches,
+      users,
+      orders,
+      cartItems,
+      reviews,
+      salesperson,
+      saleEvent, 
+      message: "Business Deleted Successfully" 
+    })
+    
+  }catch(error){
       res.status(500).json({
         message: error.message
       })
-    }
+  }
 }
 
 module.exports = {
-    getAllBusinesses: getAllBusinesses
+    getAllBusinesses: getAllBusinesses,
+    deleteBusinessById: deleteBusinessById
 };

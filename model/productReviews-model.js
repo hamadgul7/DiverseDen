@@ -43,7 +43,5 @@ const productReviewSchema = mongoose.Schema(
     }
 )
 
-
-
 const ProductReviews = mongoose.model("ProductReviews", productReviewSchema);
 module.exports = ProductReviews;
