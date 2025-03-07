@@ -4,7 +4,7 @@ const verifyToken = require('../../middleware/authMiddleware');
 const businessSubscriptionController = require('../../controller/Branch Owner/businessSubscription-controller');
 
 
-router.get('/viewSubscriptionPlan',  businessSubscriptionController.viewBusinessPlan);
+router.get('/viewSubscriptionPlan',  verifyToken, businessSubscriptionController.viewBusinessPlan);
 router.post('/cancelSubscriptionPlan', verifyToken, businessSubscriptionController.cancelSubscriptionPlan)
 
 

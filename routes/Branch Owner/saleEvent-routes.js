@@ -3,11 +3,10 @@ const saleEventController = require('../../controller/Branch Owner/saleEvent-con
 const verifyToken = require('../../middleware/authMiddleware');
 const router = express.Router();
 
-//token add karna hai
-router.post('/createSaleEvent', saleEventController.createSaleEvent);
-//token add karna hai
-router.get('/viewSaleEvents', saleEventController.viewSaleEvents);
-//token add karna hai
-router.get('/viewSaleEventById', saleEventController.viewASaleEventById)
+router.post('/createSaleEvent', verifyToken, saleEventController.createSaleEvent);
+router.get('/viewSaleEvents', verifyToken, saleEventController.viewSaleEvents);
+router.get('/viewSaleEventById', verifyToken, saleEventController.viewASaleEventById);
+router.post('/updateSaleEvent', verifyToken, saleEventController.updateSaleEvent);
+router.post('/deleteSaleEvent', verifyToken, saleEventController.deleteSaleEvent)
 
 module.exports = router;
