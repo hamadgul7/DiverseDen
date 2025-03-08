@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('./config/database');
 const path = require('path');
+// const fileUpload = require('express-fileupload')
 const authRoute = require('./routes/auth-routes');
 const subscriptionRoute = require('./routes/subscriptionPlans-route');
 const planStripePaymentRoute = require('./routes/stripePayment-routes');
@@ -32,6 +33,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use(fileUpload({
+//     useTempFiles: true
+// }))
 
 
 app.use(authRoute);

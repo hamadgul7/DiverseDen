@@ -1,18 +1,29 @@
 const SaleEvent = require('../../model/Branch Owner/saleEvent-model');
 const moment = require('moment');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({ 
+    cloud_name: 'dxeumdgez', 
+    api_key: '245894938873442', 
+    api_secret: 'Io6lfY0VSf49RTbdmq6ZyLeGtxI'
+});
+
 
 async function createSaleEvent(req, res){
     try {
-        const { name, description, startDate, endDate, discountType, discountValue, businessId, products } = req.body;
+        const { name, description, startDate, endDate, discountType, discountValue, businessId } = req.body;
+        const products = JSON.parse(req.body.products);
+
+        let imageDetails = await cloudinary.uploader.upload(req.file.path);
     
         if (!businessId) {
             return res.status(400).json({ message: "Invalid businessId format" });
         }
-    
+
         if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({ message: "Products array must not be empty" });
         }
-    
+
         const formattedProducts = products.map(product => ({
             productId: (product.productId), 
             name: product.name,
@@ -20,7 +31,8 @@ async function createSaleEvent(req, res){
             price: product.price,
             discountedPrice: product.discountedPrice
         }));
-    
+        
+
         const saleEvent = new SaleEvent({
             name,
             description,
@@ -29,10 +41,13 @@ async function createSaleEvent(req, res){
             discountType,
             discountValue,
             businessId,
-            products: formattedProducts 
+            products: formattedProducts,
+            imagePath: imageDetails.url 
         });
+        console.log('4')
     
         await saleEvent.save();
+        console.log('5')
     
         res.status(201).json({ 
             saleEvent,
@@ -112,6 +127,7 @@ async function viewSaleEvents(req, res){
                     ? `${event.discountValue}% Off`
                     : `$${event.discountValue} Off`,
                 products: event.products.length,
+                imagePath: event.imagePath,
                 status
             };
         });
@@ -155,6 +171,7 @@ async function viewASaleEventById(req, res){
             discountValue: saleEvent.discountValue,
             duration: `${moment(saleEvent.startDate).format("M/D/YYYY")} - ${moment(saleEvent.endDate).format("M/D/YYYY")}`,
             productsIncluded: saleEvent.products.length,
+            imagePath: saleEvent.imagePath,
             products: saleEvent.products.map(p => ({
                 productId: p.productId,
                 name: p.name,

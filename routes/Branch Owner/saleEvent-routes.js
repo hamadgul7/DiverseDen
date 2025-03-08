@@ -2,8 +2,27 @@ const express = require('express');
 const saleEventController = require('../../controller/Branch Owner/saleEvent-controller');
 const verifyToken = require('../../middleware/authMiddleware');
 const router = express.Router();
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
-router.post('/createSaleEvent', verifyToken, saleEventController.createSaleEvent);
+// const uploadDir = path.join(__dirname, "../../uploads");
+// if (!fs.existsSync(uploadDir)) {
+//   fs.mkdirSync(uploadDir);
+// }
+
+const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, uploadDir);
+//   },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+router.post('/createSaleEvent', verifyToken, upload.single("image"), saleEventController.createSaleEvent);
 router.get('/viewSaleEvents', verifyToken, saleEventController.viewSaleEvents);
 router.get('/viewSaleEventById', verifyToken, saleEventController.viewASaleEventById);
 router.post('/updateSaleEvent', verifyToken, saleEventController.updateSaleEvent);
