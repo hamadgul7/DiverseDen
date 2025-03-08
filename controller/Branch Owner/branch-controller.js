@@ -136,7 +136,8 @@ async function createBranch(req, res){
             return res.status(403).json({ message: "Your subscription has expired. Please renew your plan." });
         }
 
-        const branchLimit = getBranchLimit(businessOwner.activePlan.name);
+        // Get branch limit dynamically from activePlan
+        const branchLimit = businessOwner.activePlan.noOfBranches || 0;
 
         const branchCount = await Branch.countDocuments({ business });
 
@@ -170,16 +171,6 @@ async function createBranch(req, res){
         res.status(400).json({ message: error.message });
     }
 }
-
-const getBranchLimit = (planName) => {
-    const limits = {
-        // "Free": 1,
-        "Silver": 5,
-        "Gold": 10,
-        "Platinum": 15
-    };
-    return limits[planName] || 0; 
-};
 
 async function updateBranch(req, res){
     const {branchCode, name, city, address, contactNo, emailAddress, business} = req.body;

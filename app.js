@@ -17,7 +17,8 @@ const businessProductReviewRoutes = require('./routes/Branch Owner/businessProdu
 const businessSubscriptionRoutes = require('./routes/Branch Owner/businessSubscription-routes');
 const businessSaleEventRoutes = require('./routes/Branch Owner/saleEvent-routes');
 const adminUserRoutes = require('./routes/Admin/user-routes');
-const adminBusinessRoutes = require('./routes/Admin/business-routes')
+const adminBusinessRoutes = require('./routes/Admin/business-routes');
+const adminPlanSubscriberRoutes = require('./routes/Admin/subscription-routes');
 
 
 const cors = require('cors');
@@ -50,6 +51,7 @@ app.use('/branchOwner', businessSubscriptionRoutes);
 app.use('/branchOwner', businessSaleEventRoutes);
 app.use('/admin', adminUserRoutes);
 app.use('/admin', adminBusinessRoutes);
+app.use('/admin', adminPlanSubscriberRoutes)
 
 
 

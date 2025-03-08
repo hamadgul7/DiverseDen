@@ -2,11 +2,6 @@ const mongoose = require('mongoose');
 
 const subscriptionPlanSchema = new mongoose.Schema(
     {
-        // planId: {
-        //     type: String,
-        //     required: [true, "Plan Id is required"]
-        // },
-
         name: {
             type: String,
             required: [true, "Plan Name is required"]
@@ -15,6 +10,12 @@ const subscriptionPlanSchema = new mongoose.Schema(
         features: {
             type: [String],
             required: [true, "Plan features are required"]
+        },
+
+        noOfBranches: {
+            type: Number,
+            required: [true, "Number of Branches is required"],
+            min: [1, "Must allow at least one branch"]
         },
 
         price: {
