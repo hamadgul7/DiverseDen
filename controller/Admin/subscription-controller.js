@@ -134,8 +134,27 @@ async function updatePlan(req, res){
     }
 }
 
+async function deletePlan(req, res){
+    const { planId } = req.body; 
+
+    try {
+        const existingPlan = await Plan.findById(planId);
+        if (!existingPlan) {
+            return res.status(404).json({ message: "Plan not found" });
+        }
+
+        await Plan.findByIdAndDelete(planId);
+
+        res.status(200).json({ message: "Plan deleted successfully" });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getPlanSubscribers: getPlanSubscribers,
     addPlan: addPlan,
-    updatePlan: updatePlan
+    updatePlan: updatePlan,
+    deletePlan: deletePlan
 }
