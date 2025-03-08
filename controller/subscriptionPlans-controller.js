@@ -31,7 +31,7 @@ async function viewPlans(req, res) {
             { $unwind: "$planDetails" },
             {
                 $group: {
-                    _id: "$planDetails.name",
+                    _id: "$planDetails._id", // Grouping by plan ID
                     users: {
                         $push: {
                             _id: "$_id",
@@ -50,34 +50,29 @@ async function viewPlans(req, res) {
                     },
                     count: { $sum: 1 }
                 }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    plan: "$_id",
-                    count: 1,
-                    users: 1
-                }
             }
         ]);
 
-        // Create a mapping of plan names to their subscriber count
-        const planCounts = usersByPlan.reduce((acc, item) => {
-            acc[item.plan] = item.count;
+        // Convert user data into a map for easy lookup
+        const userMap = usersByPlan.reduce((acc, item) => {
+            acc[item._id] = {
+                subscribers: item.users,
+                subscriberCount: item.count
+            };
             return acc;
         }, {});
 
-        // Attach subscriber count to the plans list
+        // Attach subscriber details inside each plan
         const enrichedPlans = plans.map(plan => ({
             ...plan.toObject(),
-            subscriberCount: planCounts[plan.name] || 0
+            subscribers: userMap[plan._id]?.subscribers || [], // Attach users
+            subscriberCount: userMap[plan._id]?.subscriberCount || 0 // Attach count
         }));
 
         return res.status(200).json({
             success: true,
             plans: enrichedPlans,
-            usersByPlan,
-            message: "Subscription plans with subscribers retrieved successfully."
+            message: "Subscription plans with subscriber details retrieved successfully."
         });
 
     } catch (error) {
