@@ -6,6 +6,7 @@ const subscriptionController = require('../../controller/Admin/subscription-cont
 //token add karna hai sub ma
 router.get('/getPlanSubscribers', subscriptionController.getPlanSubscribers)
 router.post('/addSubscriptionPlan',  subscriptionController.addPlan);
+router.post('/updatePlan', subscriptionController.updatePlan)
 
 
 module.exports = router;
