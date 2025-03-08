@@ -4,7 +4,7 @@ const subscriptionPlansController = require('../controller/subscriptionPlans-con
 const router = express.Router();
 
 router.get('/subscriptionPlans', verifyToken, subscriptionPlansController.viewPlans)
-router.post('/addSubscriptionPlan', verifyToken, subscriptionPlansController.addPlan)
+
 
 
 module.exports = router;
