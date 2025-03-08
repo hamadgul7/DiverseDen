@@ -4,7 +4,7 @@ const verifyToken = require('../../middleware/authMiddleware');
 const subscriptionController = require('../../controller/Admin/subscription-controller');
 
 //token add karna hai sub ma
-router.get('/getPlanSubscribers', subscriptionController.getPlanSubscribers)
+// router.get('/getPlanSubscribers', subscriptionController.getPlanSubscribers)
 router.post('/addSubscriptionPlan',  subscriptionController.addPlan);
 router.post('/updateSubscriptionPlan', subscriptionController.updatePlan);
 router.post('/deleteSubscriptionPlan', subscriptionController.deletePlan)
