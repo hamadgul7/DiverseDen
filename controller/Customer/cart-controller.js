@@ -5,6 +5,7 @@ async function viewCart(req, res) {
     const { userId } = req.query;
 
     try {
+        
         const userCart = await Cart.find({ userId: userId }).populate('productId');
 
         if (userCart.length === 0) {

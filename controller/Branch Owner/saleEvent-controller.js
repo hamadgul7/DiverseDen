@@ -71,7 +71,7 @@ async function viewSaleEvents(req, res){
         if (!businessId) {
             return res.status(400).json({ message: "Business ID is required" });
         }
-
+        
         const pageNumber = parseInt(pageNo);
         const limitNumber = parseInt(limit);
 

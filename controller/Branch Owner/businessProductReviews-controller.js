@@ -1,23 +1,23 @@
-const ProductReviews = require('../../model/productReviews-model')
+const ProductReviews = require('../../model/productReviews-model');
+const mongoose = require('mongoose')
 
-async function  viewBusinessProductReview(req, res){
-    const { businessId, pageNo, limit } = req.query;
+async function viewBusinessProductReview(req, res){
 
     try {
+        const { businessId, pageNo, limit } = req.query;
         if (!businessId) {
             return res.status(400).json({ message: "Invalid Business ID" });
         }
-
+    
         const pageNumber = parseInt(pageNo);
         const pageLimit = parseInt(limit);
-
+    
         if (isNaN(pageNumber) || isNaN(pageLimit) || pageNumber < 1 || pageLimit < 1) {
             return res.status(400).json({ message: "Invalid page number or limit" });
         }
-
+    
         const skip = (pageNumber - 1) * pageLimit;
-
-        // Fetch reviews and total review count in parallel
+    
         const [productReviews, totalReviews] = await Promise.all([
             ProductReviews.find({ businessId })
                 .populate({
@@ -28,11 +28,12 @@ async function  viewBusinessProductReview(req, res){
                 .limit(pageLimit),
             ProductReviews.countDocuments({ businessId })
         ]);
-
-        // If no reviews found, return an empty array with pagination info
+    
+        console.log(productReviews);
+        
         if (!productReviews.length) {
             return res.status(200).json({
-                products: [], // Empty array instead of 404
+                products: [], 
                 meta: {
                     totalReviews: 0,
                     totalPages: 0,
@@ -44,13 +45,12 @@ async function  viewBusinessProductReview(req, res){
                 message: "No Reviews Found!"
             });
         }
-
-        const baseUrl = `${req.protocol}://${req.get("host")}`;
+    
         const reviewsByProduct = {};
-
+    
         productReviews.forEach((review) => {
             const productId = review.productId._id.toString();
-
+    
             if (!reviewsByProduct[productId]) {
                 reviewsByProduct[productId] = {
                     productId,
@@ -58,13 +58,11 @@ async function  viewBusinessProductReview(req, res){
                     reviewCount: 0,
                     totalRating: 0,
                     averageRating: 0,
-                    images: Array.isArray(review.productId.imagePath)
-                        ? review.productId.imagePath.map((img) => `${baseUrl}/${img}`)
-                        : [],
+                    images: Array.isArray(review.productId.imagePath) ? review.productId.imagePath : [],
                     reviews: []
                 };
             }
-
+    
             reviewsByProduct[productId].reviewCount += 1;
             reviewsByProduct[productId].totalRating += review.rating;
             reviewsByProduct[productId].reviews.push({
@@ -75,16 +73,16 @@ async function  viewBusinessProductReview(req, res){
                 reviewDate: review.reviewDate
             });
         });
-
+    
         Object.values(reviewsByProduct).forEach((product) => {
             product.averageRating = (product.totalRating / product.reviewCount).toFixed(1);
             delete product.totalRating;
         });
-
+    
         const totalPages = Math.ceil(totalReviews / pageLimit);
         const nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
         const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
-
+    
         res.status(200).json({
             products: Object.values(reviewsByProduct),
             meta: {
@@ -97,10 +95,11 @@ async function  viewBusinessProductReview(req, res){
             },
             message: "Reviews Fetched Successfully"
         });
-
+    
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+    
 }
 
 async function deleteAllSpecificProductReview(req, res){

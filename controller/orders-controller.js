@@ -76,6 +76,8 @@ async function getOrders(req, res){
         if (pageNumber < 1 || pageLimit < 1) {
             return res.status(400).json({ message: "Page Number and Limit must be positive numbers" });
         }
+        
+
 
         if (!business) {
             return res.status(400).json({ message: "Business ID not found" });

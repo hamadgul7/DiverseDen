@@ -128,18 +128,16 @@ async function addSalesperson(req, res){
 
         const savedUser = await userData.save();
 
-        // Create Salesperson
         const salesperson = new Salesperson(salespersonData);
         const newSalesperson = await salesperson.save();
 
-        // Assign salesperson to branch
         await Branch.findOneAndUpdate({ branchCode: assignBranch, business }, { $set: { salesperson: newSalesperson._id } }, { new: true });
 
         // Email Configuration
         const transporter = nodemailer.createTransport({
             host: "smtp.gmail.com",
             port: 465,
-            secure: true, // SSL
+            secure: true, 
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASSWORD

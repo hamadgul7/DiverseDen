@@ -2,86 +2,89 @@ const Product = require('../../model/Branch Owner/products-model');
 const SaleEvent = require('../../model/Branch Owner/saleEvent-model')
 
 async function getCustomerProductbyId(req, res){
+    
     const { productId } = req.query;
-    try{
-        const product = await Product.findById(productId);
-        if(!product){
-            return res.status(404).json({message: "No branch Found"})
+    try {
+        const product = await Product.findById(productId).populate({
+            path: "business",
+            select: "name", 
+        });
+
+        if (!product) {
+            return res.status(404).json({ message: "No Product Found" });
         }
 
-        // const baseUrl = `${req.protocol}://${req.get('host')}`;
-
-        // if (Array.isArray(product.imagePath)) {
-        //     product.imagePath = product.imagePath.map(image => `${baseUrl}/${image}`);
-        // } 
-
-
         res.status(200).json({
-            product,
-            message: "Product Retrieved Successfully"
-        })
+            product: {
+                ...product.toObject(), 
+                business: product.business ? product.business._id : null, 
+            },
+            brand: product.business ? product.business.name : null, 
+            message: "Product Retrieved Successfully",
+        });
     } 
-    catch(error){
-        res.status(400).json({message: error.message})
+    catch (error) {
+        res.status(400).json({ message: error.message });
     }
 }
 
 async function getProductsByCategory(req, res){
     const { category } = req.query;
-    try{
-        const products = await Product.find({
-            category: category,
+
+    try {
+        const products = await Product.find({ category }).populate({
+            path: "business",
+            select: "name", 
         });
 
-        if(products.length === 0){
-            return res.status(200).json({message: `No Products found for Category ${category}`})
+        if (products.length === 0) {
+            return res.status(200).json({ message: `No Products found for Category ${category}` });
         }
 
-        // const baseUrl = `${req.protocol}://${req.get('host')}`;
-        // const productsWithImages = products.map((product) =>{
-        //     if(Array.isArray(product.imagePath)){
-        //         product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
-        //     }
-        //     return product;
-        // });
+        const formatedProducts = products.map(product => ({
+            ...product.toObject(), 
+            business: product.business ? product.business._id : null,
+            brand: product.business ? product.business.name : null, 
+        }));
 
         res.status(200).json({
-            products,
-            message: "Products Retrieved Successfully"
+            products: formatedProducts,
+            message: "Products Retrieved Successfully",
         });
+    } 
+    catch (error) {
+        res.status(400).json({ message: error.message });
     }
-    catch(error){
-        res.status(400).json({message: error.message})
-    }
+
 }
 
 async function getProductsBySubcategoryAndType(req, res) {
     const { subCategory, productType } = req.query;
+
     try {
-        const query = {
-            productType: productType
-        };
+        const query = { productType };
 
         if (subCategory) {
             query.subCategory = subCategory;
         }
 
-        const products = await Product.find(query);
+        const products = await Product.find(query).populate({
+            path: "business",
+            select: "name", 
+        });
 
-        if(products.length === 0){
-            return res.status(404).json({message: 'No Products Found'})
+        if (products.length === 0) {
+            return res.status(404).json({ message: "No Products Found" });
         }
-        
-        // const baseUrl = `${req.protocol}://${req.get('host')}`;
-        // const productsWithImages = products.map((product) => {
-        //     if (Array.isArray(product.imagePath)) {
-        //         product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
-        //     }
-        //     return product;
-        // });
+
+        const formatedProducts = products.map(product => ({
+            ...product.toObject(), 
+            business: product.business ? product.business._id : null, 
+            brand: product.business ? product.business.name : null, 
+        }));
 
         res.status(200).json({
-            products,
+            products: formatedProducts,
             message: "Products Retrieved Successfully",
         });
     } 
@@ -93,41 +96,50 @@ async function getProductsBySubcategoryAndType(req, res) {
 async function getSaleEventProducts(req, res){
     try {
         const { productId, eventId } = req.query;
-        const product = await Product.findById(productId).lean();
-
+    
+        const product = await Product.findById(productId)
+            .populate({ path: "business", select: "name" }) 
+            .lean();
+    
         if (!product) {
-            return { error: "Product not found" };
+            return res.status(404).json({ error: "Product not found" });
         }
-
+    
         const saleEvent = await SaleEvent.findById(eventId).lean();
-
+    
         if (!saleEvent) {
-            return { error: "Sale Event not found" };
+            return res.status(404).json({ error: "Sale Event not found" });
         }
-
+    
         const discountedProduct = saleEvent.products.find(
             (p) => p.productId.toString() === productId
         );
-
+    
         const discountDetails = discountedProduct
             ? {
                   discountedPrice: discountedProduct.discountedPrice,
-                  discountValue: saleEvent.discountValue, 
+                  discountValue: saleEvent.discountValue,
               }
             : {
                   discountedPrice: null,
                   discountValue: null,
               };
-
+    
+        const productDetails = {
+            ...product,
+            business: product.business ? product.business._id : null, 
+            brand: product.business ? product.business.name : null, 
+            ...discountDetails,
+        };
+    
         res.status(200).json({
-            productDetails: { ...product, ...discountDetails },
+            productDetails,
             message: "Product retrieved successfully",
-            
         });
     } catch (error) {
         console.error("Error fetching product:", error);
-        return { error: error.message };
-    }
+        res.status(400).json({ error: error.message });
+    }    
 }
 
 async function searchProduct(req, res){

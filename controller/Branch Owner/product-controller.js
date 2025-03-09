@@ -3,6 +3,7 @@ const Product = require('../../model/Branch Owner/products-model');
 const { Business, Branch } = require('../../model/Branch Owner/business-model');
 const BranchProduct = require('../../model/Branch Owner/branchProduct-model');
 const cloudinary = require('cloudinary').v2;
+const ProductReviews = require('../../model/productReviews-model')
 
 cloudinary.config({ 
     cloud_name: 'dxeumdgez', 
@@ -16,26 +17,27 @@ cloudinary.config({
 
 async function getProductbyId(req, res){
     const { productId } = req.query;
-    try{
-        const product = await Product.findById(productId);
-        if(!product){
-            return res.status(404).json({message: "No Product Found"})
+    try {
+        const product = await Product.findById(productId).populate({
+            path: "business",
+            select: "name", 
+        });
+
+        if (!product) {
+            return res.status(404).json({ message: "No Product Found" });
         }
 
-        // const baseUrl = `${req.protocol}://${req.get('host')}`;
-
-        // if (Array.isArray(product.imagePath)) {
-        //     product.imagePath = product.imagePath.map(image => `${baseUrl}/${image}`);
-        // } 
-
-
         res.status(200).json({
-            product,
-            message: "Product Retrieved Successfully"
-        })
+            product: {
+                ...product.toObject(), 
+                business: product.business ? product.business._id : null, 
+            },
+            brand: product.business ? product.business.name : null, 
+            message: "Product Retrieved Successfully",
+        });
     } 
-    catch(error){
-        res.status(400).json({message: error.message})
+    catch (error) {
+        res.status(400).json({ message: error.message });
     }
 }
 
@@ -275,8 +277,9 @@ async function deleteProductById(req, res){
                 $pull: {products: productId}
             }
         );
+        await ProductReviews.deleteMany({ productId });
 
-        res.status(200).json({message: "Product Deleted Successfully"})
+        res.status(200).json({message: "Product and related reviews deleted successfully"})
     }
     catch(error){
         res.status(400).json({ message: error.message })
