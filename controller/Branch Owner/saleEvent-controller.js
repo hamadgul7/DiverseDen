@@ -13,6 +13,7 @@ async function createSaleEvent(req, res){
     try {
         const { name, description, startDate, endDate, discountType, discountValue, businessId } = req.body;
         const products = JSON.parse(req.body.products);
+        console.log("hey",products)
 
         let imageDetails = await cloudinary.uploader.upload(req.file.path);
     
@@ -24,9 +25,10 @@ async function createSaleEvent(req, res){
             return res.status(400).json({ message: "Products array must not be empty" });
         }
 
+
         const formattedProducts = products.map(product => ({
-            productId: (product.productId), 
-            name: product.name,
+            productId: (product._id), 
+            name: product.title,
             category: product.category,
             price: product.price,
             discountedPrice: product.discountedPrice
@@ -149,7 +151,9 @@ async function viewSaleEvents(req, res){
     }
 }
 
+
 async function viewASaleEventById(req, res){
+
     try {
         const { eventId } = req.query; 
 
@@ -189,7 +193,68 @@ async function viewASaleEventById(req, res){
             error: error.message
         });
     }
+
 };
+
+async function viewAllSaleEvents(req, res){
+    try {
+        const saleEvents = await SaleEvent.find().populate("products.productId").populate("businessId");
+        res.status(200).json(saleEvents);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching sale events", error });
+    }
+} 
+   
+async function viewSaleEventByIdWithProductDetails(req, res) {
+    try {
+        const { eventId } = req.query;
+
+        if (!eventId) {
+            return res.status(400).json({ message: "Event ID is required" });
+        }
+
+        const saleEvent = await SaleEvent.findById(eventId).populate("products.productId");
+
+        if (!saleEvent) {
+            return res.status(404).json({ message: "Sale event not found" });
+        }
+
+        const formattedEvent = {
+            name: saleEvent.name,
+            description: saleEvent.description,
+            status: getStatus(saleEvent.startDate, saleEvent.endDate),
+            discountType: saleEvent.discountType,
+            discountValue: saleEvent.discountValue,
+            duration: `${moment(saleEvent.startDate).format("M/D/YYYY")} - ${moment(saleEvent.endDate).format("M/D/YYYY")}`,
+            productsIncluded: saleEvent.products.length,
+            imagePath: saleEvent.imagePath,
+            products: saleEvent.products
+                .filter(p => p.productId) 
+                .map(p => ({
+                    productId: p.productId._id, 
+                    name: p.productId.title || "Unknown Product",
+                    description: p.productId.description || "No description available",
+                    category: p.productId.category || "Uncategorized",
+                    subCategory: p.productId.subCategory || "N/A",
+                    productType: p.productId.productType || "N/A",
+                    originalPrice: `$${(p.productId.price || 0).toFixed(2)}`,
+                    discountedPrice: `$${(p.discountedPrice || 0).toFixed(2)}`,
+                    images: p.productId.imagePath || [],
+                    sku: p.productId.sku || "N/A",
+                    variants: p.productId.variants || [],
+                    business: p.productId.business || null,
+                    branch: p.productId.branch || []
+                }))
+        };
+
+        res.status(200).json(formattedEvent);
+    } catch (error) {
+        res.status(500).json({
+            message: "Error fetching sale event details",
+            error: error.message
+        });
+    }
+}
 
 function getStatus(startDate, endDate) {
     const now = new Date();
@@ -251,7 +316,7 @@ async function updateSaleEvent(req, res) {
 
 async function deleteSaleEvent(req, res) {
     try {
-        const { eventId } = req.query; 
+        const { eventId } = req.body; 
 
         if (!eventId) {
             return res.status(400).json({ message: "Sale event ID is required" });
@@ -281,5 +346,7 @@ module.exports = {
     viewSaleEvents: viewSaleEvents,
     viewASaleEventById: viewASaleEventById,
     updateSaleEvent: updateSaleEvent,
-    deleteSaleEvent: deleteSaleEvent
+    deleteSaleEvent: deleteSaleEvent,
+    viewSaleEventByIdWithProductDetails: viewSaleEventByIdWithProductDetails,
+    viewAllSaleEvents: viewAllSaleEvents
 }

@@ -24,7 +24,9 @@ const upload = multer({ storage });
 
 router.post('/createSaleEvent', verifyToken, upload.single("image"), saleEventController.createSaleEvent);
 router.get('/viewSaleEvents', verifyToken, saleEventController.viewSaleEvents);
+router.get('/viewAllSaleEvents', saleEventController.viewAllSaleEvents)
 router.get('/viewSaleEventById', verifyToken, saleEventController.viewASaleEventById);
+router.get('/viewSaleEventByIdWithProductDetails',  saleEventController.viewSaleEventByIdWithProductDetails)
 router.post('/updateSaleEvent', verifyToken, saleEventController.updateSaleEvent);
 router.post('/deleteSaleEvent', verifyToken, saleEventController.deleteSaleEvent)
 
