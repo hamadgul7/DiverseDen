@@ -52,6 +52,11 @@ const userSchema = new mongoose.Schema(
       default: null, 
     },
 
+    assignedBranch: {
+      type: String,
+      default: null
+    },
+
     business: { 
       type: mongoose.Schema.Types.ObjectId, 
       ref: 'Business', 

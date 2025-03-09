@@ -68,7 +68,6 @@ async function addSalesperson(req, res){
     console.log("Email user:", process.env.EMAIL_USER);
     console.log(process.env.EMAIL_PASSWORD)
 
-    // Input validation function
     const validateInput = () => {
         const errors = {};
         
@@ -123,6 +122,7 @@ async function addSalesperson(req, res){
             role: "Salesperson",
             phone: "03130000000",
             password: hashedPassword,
+            assignedBranch: assignBranch,
             business
         });
 
