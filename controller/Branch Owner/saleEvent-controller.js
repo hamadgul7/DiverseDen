@@ -198,8 +198,14 @@ async function viewASaleEventById(req, res){
 
 async function viewAllSaleEvents(req, res){
     try {
-        const saleEvents = await SaleEvent.find().populate("products.productId").populate("businessId");
-        res.status(200).json(saleEvents);
+        const saleEvents = await SaleEvent.find();
+
+        const eventsWithStatus = saleEvents.map(event => ({
+            ...event.toObject(),
+            status: getStatus(event.startDate, event.endDate)
+        }));
+
+        res.status(200).json(eventsWithStatus);
     } catch (error) {
         res.status(500).json({ message: "Error fetching sale events", error });
     }
@@ -260,7 +266,7 @@ function getStatus(startDate, endDate) {
     const now = new Date();
     if (now < startDate) return "Upcoming";
     if (now > endDate) return "Expired";
-    return "Active";
+    return "Ongoing";
 }
 
 async function updateSaleEvent(req, res) {
