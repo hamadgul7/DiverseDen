@@ -7,83 +7,77 @@ const BranchProduct = require('../../model/Branch Owner/branchProduct-model')
 async function viewBranchProductsById(req, res) {
     const { branchId, pageNo, limit } = req.query;
 
-try {
-    const pageNumber = parseInt(pageNo);
-    const pageLimit = parseInt(limit);
+    try {
+        const pageNumber = parseInt(pageNo);
+        const pageLimit = parseInt(limit);
 
-    if (pageNumber < 1 || pageLimit < 1) {
-        return res.status(400).json({ message: "PageNo and PageLimit must be positive integers" });
+        if (pageNumber < 1 || pageLimit < 1) {
+            return res.status(400).json({ message: "PageNo and PageLimit must be positive integers" });
+        }
+
+        const branch = await Branch.findById(branchId).populate("products");
+        if (!branch) {
+            return res.status(404).json({ message: "Branch not found" });
+        }
+
+        if (!branch.products || branch.products.length === 0) {
+            return res.status(200).json({ message: "No products found for this branch" });
+        }
+
+        const startIndex = (pageNumber - 1) * pageLimit;
+        const endIndex = startIndex + pageLimit;
+        const paginatedProducts = branch.products.slice(startIndex, endIndex);
+
+        const productIds = paginatedProducts.map(product => product._id);
+
+        const branchProductData = await BranchProduct.find({
+            branchCode: branch.branchCode,
+            product: { $in: productIds }
+        }).select("product variants totalBranchQuantity");
+
+        const branchProductMap = {};
+        branchProductData.forEach(bp => {
+            branchProductMap[bp.product.toString()] = {
+                totalBranchQuantity: bp.totalBranchQuantity,
+                variants: bp.variants 
+            };
+        });
+
+        const allProducts = paginatedProducts.map((product) => {
+            const totalQuantity = product.totalQuantity || 0;
+            const assignedQuantity = product.totalAssignedQuantity || 0;
+
+            return {
+                ...product.toObject(),
+                remainingQuantity: Math.max(totalQuantity - assignedQuantity, 0), 
+                totalBranchQuantity: branchProductMap[product._id]?.totalBranchQuantity || 0, 
+            };
+        });
+
+        const totalProducts = branch.products.length;
+        const totalPages = Math.ceil(totalProducts / pageLimit);
+        let nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
+        let previousPage = pageNumber > 1 ? pageNumber - 1 : null;
+
+        res.status(200).json({
+            products: allProducts,
+            meta: {
+                totalItems: totalProducts,
+                totalPages,
+                currentPage: pageNumber,
+                pageLimit,
+                nextPage,
+                previousPage,
+            },
+            message: "Products retrieved successfully",
+        });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
+    
+    
 
-    // Fetch branch with products populated
-    const branch = await Branch.findById(branchId).populate("products");
-    if (!branch) {
-        return res.status(404).json({ message: "Branch not found" });
-    }
-
-    if (!branch.products || branch.products.length === 0) {
-        return res.status(200).json({ message: "No products found for this branch" });
-    }
-
-    const startIndex = (pageNumber - 1) * pageLimit;
-    const endIndex = startIndex + pageLimit;
-    const paginatedProducts = branch.products.slice(startIndex, endIndex);
-
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-
-    // ✅ Get assigned quantities & totalBranchQuantity from BranchProduct model
-    const productIds = paginatedProducts.map(product => product._id);
-
-    const branchProductData = await BranchProduct.find({
-        branchCode: branch.branchCode,
-        product: { $in: productIds }
-    }).select("product variants totalBranchQuantity");
-
-    // Convert branch product data into a map for easy lookup
-    const branchProductMap = {};
-    branchProductData.forEach(bp => {
-        branchProductMap[bp.product.toString()] = {
-            totalBranchQuantity: bp.totalBranchQuantity,
-            variants: bp.variants // Includes variant-level data if needed
-        };
-    });
-
-    // Process products and calculate remaining quantity per variant
-    const allProducts = paginatedProducts.map((product) => {
-        const totalQuantity = product.totalQuantity || 0;
-        const assignedQuantity = product.totalAssignedQuantity || 0;
-
-        return {
-            ...product.toObject(),
-            remainingQuantity: Math.max(totalQuantity - assignedQuantity, 0), // Ensure it's not negative
-            imagePath: product.imagePath?.map((image) => `${baseUrl}/${image}`) || [],
-            totalBranchQuantity: branchProductMap[product._id]?.totalBranchQuantity || 0, // ✅ Include totalBranchQuantity
-        };
-    });
-
-    const totalProducts = branch.products.length;
-    const totalPages = Math.ceil(totalProducts / pageLimit);
-    let nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
-    let previousPage = pageNumber > 1 ? pageNumber - 1 : null;
-
-    res.status(200).json({
-        products: allProducts,
-        meta: {
-            totalItems: totalProducts,
-            totalPages,
-            currentPage: pageNumber,
-            pageLimit,
-            nextPage,
-            previousPage,
-        },
-        message: "Products retrieved successfully",
-    });
-
-} catch (error) {
-    res.status(400).json({ message: error.message });
-}
-
-    //last latest sara chalta hai bs total branch assigned quantity kelie update kar raha hu
+    //last latest 
     // const { branchId, pageNo, limit } = req.query;
 
     // try {
@@ -94,6 +88,7 @@ try {
     //         return res.status(400).json({ message: "PageNo and PageLimit must be positive integers" });
     //     }
 
+    //     // Fetch branch with products populated
     //     const branch = await Branch.findById(branchId).populate("products");
     //     if (!branch) {
     //         return res.status(404).json({ message: "Branch not found" });
@@ -109,45 +104,33 @@ try {
 
     //     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    //     // Get assigned quantities from BranchProduct model
+    //     // ✅ Get assigned quantities & totalBranchQuantity from BranchProduct model
     //     const productIds = paginatedProducts.map(product => product._id);
 
-    //     const assignedQuantities = await BranchProduct.aggregate([
-    //         { $match: { product: { $in: productIds } } }, // Match products
-    //         { $unwind: "$variants" }, // Flatten variants array
-    //         {
-    //             $group: {
-    //                 _id: {
-    //                     productId: "$product",
-    //                     variantId: "$variants._id"
-    //                 },
-    //                 totalAssignedQuantity: { $sum: "$variants.quantity" }
-    //             }
-    //         }
-    //     ]);
+    //     const branchProductData = await BranchProduct.find({
+    //         branchCode: branch.branchCode,
+    //         product: { $in: productIds }
+    //     }).select("product variants totalBranchQuantity");
 
-    //     // Convert assigned quantities into an easily accessible map
-    //     const assignedQuantityMap = {};
-    //     assignedQuantities.forEach(({ _id, totalAssignedQuantity }) => {
-    //         if (!assignedQuantityMap[_id.productId]) {
-    //             assignedQuantityMap[_id.productId] = {};
-    //         }
-    //         assignedQuantityMap[_id.productId][_id.variantId] = totalAssignedQuantity;
+    //     // Convert branch product data into a map for easy lookup
+    //     const branchProductMap = {};
+    //     branchProductData.forEach(bp => {
+    //         branchProductMap[bp.product.toString()] = {
+    //             totalBranchQuantity: bp.totalBranchQuantity,
+    //             variants: bp.variants // Includes variant-level data if needed
+    //         };
     //     });
 
     //     // Process products and calculate remaining quantity per variant
     //     const allProducts = paginatedProducts.map((product) => {
-    //         const totalQuantity = product.totalQuantity || 0; // Assuming `totalQuantity` exists in Product schema
+    //         const totalQuantity = product.totalQuantity || 0;
     //         const assignedQuantity = product.totalAssignedQuantity || 0;
 
     //         return {
     //             ...product.toObject(),
     //             remainingQuantity: Math.max(totalQuantity - assignedQuantity, 0), // Ensure it's not negative
     //             imagePath: product.imagePath?.map((image) => `${baseUrl}/${image}`) || [],
-    //             variants: product.variants.map(variant => ({
-    //                 ...variant,
-    //                 remainingQuantity: variant.variantTotal - (assignedQuantityMap[product._id]?.[variant._id] || 0)
-    //             }))
+    //             totalBranchQuantity: branchProductMap[product._id]?.totalBranchQuantity || 0, // ✅ Include totalBranchQuantity
     //         };
     //     });
 
@@ -155,7 +138,7 @@ try {
     //     const totalPages = Math.ceil(totalProducts / pageLimit);
     //     let nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
     //     let previousPage = pageNumber > 1 ? pageNumber - 1 : null;
-    //     console.log(allProducts)
+
     //     res.status(200).json({
     //         products: allProducts,
     //         meta: {
@@ -168,9 +151,11 @@ try {
     //         },
     //         message: "Products retrieved successfully",
     //     });
+
     // } catch (error) {
     //     res.status(400).json({ message: error.message });
     // }
+    
 }
 
 async function viewBranchProductsDetail(req, res){
