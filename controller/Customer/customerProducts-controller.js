@@ -1,4 +1,5 @@
 const Product = require('../../model/Branch Owner/products-model');
+const SaleEvent = require('../../model/Branch Owner/saleEvent-model')
 
 async function getCustomerProductbyId(req, res){
     const { productId } = req.query;
@@ -89,6 +90,45 @@ async function getProductsBySubcategoryAndType(req, res) {
     }
 }
 
+async function getSaleEventProducts(req, res){
+    try {
+        const { productId, eventId } = req.query;
+        const product = await Product.findById(productId).lean();
+
+        if (!product) {
+            return { error: "Product not found" };
+        }
+
+        const saleEvent = await SaleEvent.findById(eventId).lean();
+
+        if (!saleEvent) {
+            return { error: "Sale Event not found" };
+        }
+
+        const discountedProduct = saleEvent.products.find(
+            (p) => p.productId.toString() === productId
+        );
+
+        const discountDetails = discountedProduct
+            ? {
+                  discountedPrice: discountedProduct.discountedPrice,
+                  discountValue: saleEvent.discountValue, 
+              }
+            : {
+                  discountedPrice: null,
+                  discountValue: null,
+              };
+
+        res.status(200).json({
+            productDetails: { ...product, ...discountDetails },
+            message: "Product retrieved successfully",
+            
+        });
+    } catch (error) {
+        console.error("Error fetching product:", error);
+        return { error: error.message };
+    }
+}
 
 async function searchProduct(req, res){
     try {
@@ -163,5 +203,7 @@ module.exports = {
     getCustomerProductbyId: getCustomerProductbyId,
     getProductsByCategory: getProductsByCategory,
     getProductsBySubcategoryAndType: getProductsBySubcategoryAndType,
+    getSaleEventProducts: getSaleEventProducts,
     searchProduct: searchProduct
+   
 }

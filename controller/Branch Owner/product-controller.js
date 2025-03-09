@@ -19,7 +19,7 @@ async function getProductbyId(req, res){
     try{
         const product = await Product.findById(productId);
         if(!product){
-            return res.status(404).json({message: "No branch Found"})
+            return res.status(404).json({message: "No Product Found"})
         }
 
         // const baseUrl = `${req.protocol}://${req.get('host')}`;
