@@ -3,7 +3,6 @@ const User = require('../../model/auth-model')
 
 async function viewCart(req, res) {
     const { userId } = req.query;
-    const baseUrl = `${req.protocol}://${req.get('host')}`; 
 
     try {
         const userCart = await Cart.find({ userId: userId }).populate('productId');
@@ -15,10 +14,7 @@ async function viewCart(req, res) {
         const productsWithImages = userCart
             .filter(cartItem => cartItem.productId)
             .map(cartItem => {
-                const product = cartItem.productId.toObject(); 
-                if (Array.isArray(product.imagePath)) {
-                    product.imagePath = product.imagePath.map(image => `${baseUrl}/${image}`);
-                }
+                const product = cartItem.productId.toObject();
                 return {
                     ...cartItem.toObject(),
                     productId: product,
