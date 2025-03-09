@@ -8,11 +8,11 @@ async function getCustomerProductbyId(req, res){
             return res.status(404).json({message: "No branch Found"})
         }
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        // const baseUrl = `${req.protocol}://${req.get('host')}`;
 
-        if (Array.isArray(product.imagePath)) {
-            product.imagePath = product.imagePath.map(image => `${baseUrl}/${image}`);
-        } 
+        // if (Array.isArray(product.imagePath)) {
+        //     product.imagePath = product.imagePath.map(image => `${baseUrl}/${image}`);
+        // } 
 
 
         res.status(200).json({
@@ -36,16 +36,16 @@ async function getProductsByCategory(req, res){
             return res.status(200).json({message: `No Products found for Category ${category}`})
         }
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const productsWithImages = products.map((product) =>{
-            if(Array.isArray(product.imagePath)){
-                product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
-            }
-            return product;
-        });
+        // const baseUrl = `${req.protocol}://${req.get('host')}`;
+        // const productsWithImages = products.map((product) =>{
+        //     if(Array.isArray(product.imagePath)){
+        //         product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
+        //     }
+        //     return product;
+        // });
 
         res.status(200).json({
-            products: productsWithImages,
+            products,
             message: "Products Retrieved Successfully"
         });
     }
@@ -71,16 +71,16 @@ async function getProductsBySubcategoryAndType(req, res) {
             return res.status(404).json({message: 'No Products Found'})
         }
         
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const productsWithImages = products.map((product) => {
-            if (Array.isArray(product.imagePath)) {
-                product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
-            }
-            return product;
-        });
+        // const baseUrl = `${req.protocol}://${req.get('host')}`;
+        // const productsWithImages = products.map((product) => {
+        //     if (Array.isArray(product.imagePath)) {
+        //         product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
+        //     }
+        //     return product;
+        // });
 
         res.status(200).json({
-            products: productsWithImages,
+            products,
             message: "Products Retrieved Successfully",
         });
     } 
@@ -142,16 +142,16 @@ async function searchProduct(req, res){
             return res.status(404).json({message: "No Related Products Found"})
         }
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const productsWithImages = products.map((product) =>{
-            if(Array.isArray(product.imagePath)){
-                product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
-            }
-            return product;
-        });
+        // const baseUrl = `${req.protocol}://${req.get('host')}`;
+        // const productsWithImages = products.map((product) =>{
+        //     if(Array.isArray(product.imagePath)){
+        //         product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
+        //     }
+        //     return product;
+        // });
 
         res.status(200).json({
-            products: productsWithImages,
+            products,
             message: "Searched Products"
         }); 
     } catch (error) {
