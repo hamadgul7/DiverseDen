@@ -97,21 +97,18 @@ async function verifyTokenRefresh(req, res) {
 
       const { password: _, ...userInfo } = user.toObject();
 
-      // Initialize isMainBranch as false
-      userInfo.isMainBranch = false;
+      // userInfo.hasMainBranch = false;
 
-      // Check if user is a branch owner
-      if (user.role === "branch owner") {
-          const business = await Business.findOne({ user: user._id }).populate("branches");
+      // if (user.role === "branch owner") {
+      //     const business = await Business.findOne({ user: user._id }).populate("branches");
 
-          if (business) {
-              // Check if any branch has isMainBranch: true
-              userInfo.isMainBranch = business.branches.some(branch => branch.isMainBranch === true);
-          }
-      }
+      //     if (business) {
+      //         userInfo.hasMainBranch = business.branches.some(branch => branch.isMainBranch === true);
+      //     }
+      // }
 
       res.status(201).json({
-          user: userInfo,  // Now includes isMainBranch inside user object
+          user: userInfo, 
           message: "User Data.."
       });
   } catch (error) {

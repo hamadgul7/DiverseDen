@@ -104,7 +104,20 @@ async function viewBranches(req, res) {
 }
 
 async function createBranch(req, res){
-    const { branchCode, name, city, address, contactNo, emailAddress, business, isMainBranch } = req.body;
+    const { branchCode, name, city, address, contactNo, emailAddress, business, isMainBranch, user } = req.body;
+
+    console.log("Start",isMainBranch)
+    console.log("second",user.hasMainBranch)
+    if(isMainBranch){
+        await User.findByIdAndUpdate(
+            user._id,
+            {
+                $set: {hasMainBranch: true }
+            }
+        )
+        console.log("User Info",user)
+        
+    }
 
     try {
         const capitalizedData = {
@@ -115,7 +128,7 @@ async function createBranch(req, res){
             contactNo,
             emailAddress,
             business,
-            isMainBranch
+            hasMainBranch: isMainBranch
         };
 
         const businessExist = await Business.findById(business).populate("user"); 
