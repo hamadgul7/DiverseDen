@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createToken } = require('../config/jwt');
 const secretKey = "DiverseDen";
-const {Business} = require('../model/Branch Owner/business-model')
 
 async function signup(req, res) {
   const { firstname, lastname, email, role, phone, password } = req.body;
@@ -39,26 +38,67 @@ async function signup(req, res) {
 };
 
 async function login(req, res){
+  const { email, password } = req.body;
 
-    const { email, password } = req.body;
-
-    try {
-      const user = await User.findOne({ email });
-      if (!user) {
-          return res.status(400).json({ message: "User Not Found" });
+  try{
+      const user = await User.findOne({email});
+      if(!user){
+        return res.status(400).json({message: "User Not Found"})
       }
 
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-          return res.status(400).json({ message: "Invalid Password" });
+      const isPasswordValid = await bcrypt.compare(password, user.password)
+      if(!isPasswordValid){
+        return res.status(400).json({message: "Invalid Password"})
+      }
+
+      const {password: _, ...userInfo} = user.toObject();
+
+      const token = createToken(user._id);
+      res.status(201).json({
+        user: userInfo,
+        token,
+        message: "Login Sucessful"
+      })
+  }
+  catch(error){
+    res.status(500).json({message: error.message})
+  } 
+}
+
+async function verifyTokenRefresh(req, res) {
+  const token = req.header("Authorization")?.split(" ")[1];
+
+  if (!token) {
+      return res.status(401).json({
+          message: "Access Denied! Unauthorized user"
+      });
+  }
+
+  try {
+      const decoded = jwt.decode(token);
+      if (!decoded) {
+          return res.status(400).json({ message: "Invalid token." });
+      }
+
+      if (decoded.exp * 1000 < Date.now()) {
+          return res.status(401).json({ message: "Token has expired." });
+      }
+
+      const verified = jwt.verify(token, secretKey);
+      req.user = verified;
+      const userId = req.user.id;
+      const user = await User.findOne({ _id: userId });
+
+      if (!user) {
+          return res.status(404).json({ message: "No user Found!" });
       }
 
       const { password: _, ...userInfo } = user.toObject();
-
+      
       let isMainBranch = false;
 
       // Check if user is a branch owner
-      if (user.role === "Branch Owner") {
+      if (user.role === "branch owner") {
           const business = await Business.findOne({ user: user._id }).populate("branches");
 
           if (business) {
@@ -67,84 +107,16 @@ async function login(req, res){
           }
       }
 
-      const token = createToken(user._id);
-
       res.status(201).json({
           user: userInfo,
-          isMainBranch, 
-          token,
-          message: "Login Successful"
+          isMainBranch, // Added to response
+          message: "User Data.."
       });
-    } catch (error) {
-        console.error("Login Error:", error);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
+  } catch (error) {
+      res.status(400).json({ message: error.message });
+  }
 
-  // const { email, password } = req.body;
-
-  // try{
-  //     const user = await User.findOne({email});
-  //     if(!user){
-  //       return res.status(400).json({message: "User Not Found"})
-  //     }
-
-  //     const isPasswordValid = await bcrypt.compare(password, user.password)
-  //     if(!isPasswordValid){
-  //       return res.status(400).json({message: "Invalid Password"})
-  //     }
-
-  //     const {password: _, ...userInfo} = user.toObject();
-
-  //     const token = createToken(user._id);
-  //     res.status(201).json({
-  //       user: userInfo,
-  //       token,
-  //       message: "Login Sucessful"
-  //     })
-  // }
-  // catch(error){
-  //   res.status(500).json({message: error.message})
-  // } 
 }
-
-async function verifyTokenRefresh(req, res) {
-  const token = req.header("Authorization")?.split(" ")[1];
-  if(!token){
-      return res.status(401).json({
-          message: "Access Denied! unauthorized user"
-      })
-  }
-
-  try{
-
-      const decoded = jwt.decode(token);
-      if (!decoded) {
-        return res.status(400).json({ message: "Invalid token." });
-      }
-
-      if (decoded.exp * 1000 < Date.now()) {
-        return res.status(401).json({ message: "Token has expired." });
-      }
-
-      const verified = jwt.verify(token, secretKey);
-      req.user = verified;
-      const userId = req.user.id;
-      const user = await User.findOne({_id: userId});
-      if(!user){
-        res.status(404).json({message: "No user Found!"})
-      }
-
-      const { password: _, ...userInfo } = user.toObject();
-      res.status(201).json({
-        user: userInfo,
-        message: "User Data.."
-      })
-  }
-  catch(error){
-      res.status(400).json({message: error.message})
-  }
-}
-
 // async function getUser(req, res) {
 //   const { userId } = req.body
 //   try {
