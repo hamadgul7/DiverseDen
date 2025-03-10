@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createToken } = require('../config/jwt');
 const secretKey = "DiverseDen";
+const {Business} = require('../model/Branch Owner/business-model')
 
 async function signup(req, res) {
   const { firstname, lastname, email, role, phone, password } = req.body;
@@ -38,31 +39,72 @@ async function signup(req, res) {
 };
 
 async function login(req, res){
-  const { email, password } = req.body;
 
-  try{
-      const user = await User.findOne({email});
-      if(!user){
-        return res.status(400).json({message: "User Not Found"})
+    const { email, password } = req.body;
+
+    try {
+      const user = await User.findOne({ email });
+      if (!user) {
+          return res.status(400).json({ message: "User Not Found" });
       }
 
-      const isPasswordValid = await bcrypt.compare(password, user.password)
-      if(!isPasswordValid){
-        return res.status(400).json({message: "Invalid Password"})
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+          return res.status(400).json({ message: "Invalid Password" });
       }
 
-      const {password: _, ...userInfo} = user.toObject();
+      const { password: _, ...userInfo } = user.toObject();
+
+      let isMainBranch = false;
+
+      // Check if user is a branch owner
+      if (user.role === "Branch Owner") {
+          const business = await Business.findOne({ user: user._id }).populate("branches");
+
+          if (business) {
+              // Check if any branch has isMainBranch: true
+              isMainBranch = business.branches.some(branch => branch.isMainBranch === true);
+          }
+      }
 
       const token = createToken(user._id);
+
       res.status(201).json({
-        user: userInfo,
-        token,
-        message: "Login Sucessful"
-      })
-  }
-  catch(error){
-    res.status(500).json({message: error.message})
-  } 
+          user: userInfo,
+          isMainBranch, 
+          token,
+          message: "Login Successful"
+      });
+    } catch (error) {
+        console.error("Login Error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+
+  // const { email, password } = req.body;
+
+  // try{
+  //     const user = await User.findOne({email});
+  //     if(!user){
+  //       return res.status(400).json({message: "User Not Found"})
+  //     }
+
+  //     const isPasswordValid = await bcrypt.compare(password, user.password)
+  //     if(!isPasswordValid){
+  //       return res.status(400).json({message: "Invalid Password"})
+  //     }
+
+  //     const {password: _, ...userInfo} = user.toObject();
+
+  //     const token = createToken(user._id);
+  //     res.status(201).json({
+  //       user: userInfo,
+  //       token,
+  //       message: "Login Sucessful"
+  //     })
+  // }
+  // catch(error){
+  //   res.status(500).json({message: error.message})
+  // } 
 }
 
 async function verifyTokenRefresh(req, res) {
