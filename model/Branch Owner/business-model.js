@@ -60,6 +60,11 @@ const branchSchema = new mongoose.Schema(
                 default: null
             },
         ],
+
+        isMainBranch: {
+            type: Boolean,
+            default: false
+        }
     },
     { timestamps: true }
 );
