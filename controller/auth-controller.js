@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createToken } = require('../config/jwt');
 const secretKey = "DiverseDen";
+const { Business } = require('../model/Branch Owner/business-model')
 
 async function signup(req, res) {
   const { firstname, lastname, email, role, phone, password } = req.body;
@@ -65,6 +66,7 @@ async function login(req, res){
   } 
 }
 
+
 async function verifyTokenRefresh(req, res) {
   const token = req.header("Authorization")?.split(" ")[1];
 
@@ -94,8 +96,9 @@ async function verifyTokenRefresh(req, res) {
       }
 
       const { password: _, ...userInfo } = user.toObject();
-      
-      let isMainBranch = false;
+
+      // Initialize isMainBranch as false
+      userInfo.isMainBranch = false;
 
       // Check if user is a branch owner
       if (user.role === "branch owner") {
@@ -103,18 +106,18 @@ async function verifyTokenRefresh(req, res) {
 
           if (business) {
               // Check if any branch has isMainBranch: true
-              isMainBranch = business.branches.some(branch => branch.isMainBranch === true);
+              userInfo.isMainBranch = business.branches.some(branch => branch.isMainBranch === true);
           }
       }
 
       res.status(201).json({
-          user: userInfo,
-          isMainBranch, // Added to response
+          user: userInfo,  // Now includes isMainBranch inside user object
           message: "User Data.."
       });
   } catch (error) {
       res.status(400).json({ message: error.message });
   }
+
 
 }
 // async function getUser(req, res) {
