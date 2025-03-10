@@ -1,9 +1,9 @@
 require("dotenv").config();
-const crypto = require('crypto'); // For generating a random password
+const crypto = require('crypto'); 
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer'); // For sending emails
-const Salesperson = require('../../model/Branch Owner/salesperson-model'); // Salesperson Model
-const User = require('../../model/auth-model'); // User Model
+const nodemailer = require('nodemailer'); 
+const Salesperson = require('../../model/Branch Owner/salesperson-model'); 
+const User = require('../../model/auth-model'); 
 const { Branch } = require('../../model/Branch Owner/business-model');
 
 function capitalizeFirstLetter(string) {
@@ -66,7 +66,7 @@ async function viewSalesperson(req, res){
 async function addSalesperson(req, res){
     const { name, email, assignBranch, business } = req.body;
     console.log("Email user:", process.env.EMAIL_USER);
-    console.log(process.env.EMAIL_PASSWORD)
+    console.log(process.env.EMAIL_PASSWORD);
 
     const validateInput = () => {
         const errors = {};
@@ -79,10 +79,8 @@ async function addSalesperson(req, res){
         return Object.keys(errors).length === 0 ? null : errors;
     };
 
-    // Capitalize first letter of each word
     const capitalizeFirstLetter = (str) => str.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
 
-    // Parse name
     const parseName = (fullName) => {
         if (!fullName) return { firstName: "", lastName: "" };
         const parts = fullName.trim().split(" ");
@@ -90,31 +88,24 @@ async function addSalesperson(req, res){
     };
 
     try {
-        // Validate input
         const validationErrors = validateInput();
         if (validationErrors) return res.status(400).json({ errors: validationErrors });
 
         const salespersonData = { name: capitalizeFirstLetter(name), email, assignBranch, business };
 
-        // Check if branch exists
         const existBranch = await Branch.findOne({ branchCode: assignBranch, business });
         if (!existBranch) return res.status(404).json({ message: "Branch Not Found!" });
 
         if (existBranch.salesperson) return res.status(400).json({ message: "A salesperson is already assigned to this branch." });
 
-        // Check if email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: "A user with this email already exists." });
 
-
-        // Generate a 6-character password
         const generatedPassword = crypto.randomBytes(3).toString("hex");
         const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
-        // Parse name
         const { firstName, lastName } = parseName(name);
 
-        // Create User
         const userData = new User({
             firstname: firstName,
             lastname: lastName,
@@ -128,12 +119,19 @@ async function addSalesperson(req, res){
 
         const savedUser = await userData.save();
 
+        if (existBranch.hasMainBranch) {
+            await User.findByIdAndUpdate(savedUser._id, { hasMainBranch: true }, { new: true });
+        }
+
         const salesperson = new Salesperson(salespersonData);
         const newSalesperson = await salesperson.save();
 
-        await Branch.findOneAndUpdate({ branchCode: assignBranch, business }, { $set: { salesperson: newSalesperson._id } }, { new: true });
+        await Branch.findOneAndUpdate(
+            { branchCode: assignBranch, business },
+            { $set: { salesperson: newSalesperson._id } },
+            { new: true }
+        );
 
-        // Email Configuration
         const transporter = nodemailer.createTransport({
             host: "smtp.gmail.com",
             port: 465,

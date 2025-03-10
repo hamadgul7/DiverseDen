@@ -55,6 +55,11 @@ const ordersSchema = new mongoose.Schema(
             required: [true, "BusinessId is require"]
         },
 
+        branchCode: {
+            type: String,
+            required: true
+        },
+
         userId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
@@ -76,6 +81,10 @@ const ordersSchema = new mongoose.Schema(
         status: {
             type: String,
             default: "Pending"
+        },
+
+        orderType: {
+            type: String
         },
         
         totalAmount: {

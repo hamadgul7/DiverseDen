@@ -1,8 +1,12 @@
 const Order = require('../model/orders-model');
+require("dotenv").config();
+const { Branch } = require('../model/Branch Owner/business-model');
+const nodemailer = require('nodemailer'); 
 
 
 async function addOrderDetails(req, res) {
-    const { data, cartItems } = req.body;
+
+    const { data, cartItems, orderType } = req.body;
     try {
         const userId = cartItems.find(item => item.userId)?.userId;
         if (!userId) {
@@ -20,7 +24,6 @@ async function addOrderDetails(req, res) {
             paymentMethod: data.paymentMethod
         };
 
-        
         const businessGroups = cartItems.reduce((acc, item) => {
             const businessId = item.productId.business;
             if (!acc[businessId]) {
@@ -30,16 +33,29 @@ async function addOrderDetails(req, res) {
             return acc;
         }, {});
 
-        
         const createdOrders = [];
+
         for (const [businessId, items] of Object.entries(businessGroups)) {
+            const mainBranch = await Branch.findOne({
+                business: businessId,
+                hasMainBranch: true
+            });
+
+            if (!mainBranch) {
+                return res.status(400).json({
+                    message: `No main branch found for business ${businessId}`
+                });
+            }
+
             const orderData = {
                 businessId,
                 userId,
                 userInfo,
+                branchCode: mainBranch.branchCode, 
                 cartItems: items.map(item => item.productId._id),
                 status: 'Pending',
-                totalAmount: items.reduce((total, item) => 
+                orderType: orderType,
+                totalAmount: items.reduce((total, item) =>
                     total + (item.productId.price * item.quantity), 0)
             };
 
@@ -53,6 +69,7 @@ async function addOrderDetails(req, res) {
             orders: createdOrders.map(order => ({
                 orderId: order._id,
                 businessId: order.businessId,
+                branchCode: order.branchCode, 
                 totalAmount: order.totalAmount
             }))
         });
@@ -64,6 +81,152 @@ async function addOrderDetails(req, res) {
             error: error.message 
         });
     }
+
+
+
+
+    // const { data, cartItems, orderType } = req.body;
+    
+    // try {
+    //     const userId = cartItems.find(item => item.userId)?.userId;
+    //     if (!userId) {
+    //         return res.status(400).json({ message: "No user ID found" });
+    //     }
+    
+    //     const userInfo = {
+    //         firstname: data.firstName,
+    //         lastname: data.lastName,
+    //         email: data.email,
+    //         address: data.address,
+    //         city: data.city,
+    //         postal: data.postal,
+    //         phone: data.phone,
+    //         paymentMethod: data.paymentMethod
+    //     };
+    
+    //     const businessGroups = cartItems.reduce((acc, item) => {
+    //         const businessId = item.productId.business;
+    //         if (!acc[businessId]) {
+    //             acc[businessId] = [];
+    //         }
+    //         acc[businessId].push(item);
+    //         return acc;
+    //     }, {});
+    
+    //     const createdOrders = [];
+    
+    //     for (const [businessId, items] of Object.entries(businessGroups)) {
+    //         const mainBranch = await Branch.findOne({
+    //             business: businessId,
+    //             hasMainBranch: true
+    //         }).populate("business");
+    
+    //         if (!mainBranch) {
+    //             return res.status(400).json({
+    //                 message: `No main branch found for business ${businessId}`
+    //             });
+    //         }
+    
+    //         const businessName = mainBranch.business?.name || "Your Business";
+    
+    //         const orderData = {
+    //             businessId,
+    //             userId,
+    //             userInfo,
+    //             branchCode: mainBranch.branchCode,
+    //             cartItems: items.map(item => item.productId._id),
+    //             status: 'Pending',
+    //             orderType,
+    //             totalAmount: items.reduce((total, item) => total + (item.productId.price * item.quantity), 0)
+    //         };
+    
+    //         const order = new Order(orderData);
+    //         await order.save();
+    //         createdOrders.push(order);
+    
+    //         const productList = items
+    //             .map(
+    //                 (item) => `
+    //                 <tr>
+    //                     <td style="border:1px solid #ddd; padding:8px; text-align:center;">
+    //                         <img src="${item.productId.imagePath[0]}" alt="${item.productId.title}" style="width:100px; height:auto; border-radius:5px;">
+    //                     </td>
+    //                     <td style="border:1px solid #ddd; padding:8px; text-align:center;">
+    //                         ${item.productId.title}
+    //                     </td>
+    //                     <td style="border:1px solid #ddd; padding:8px; text-align:center;">
+    //                         ${item.quantity}
+    //                     </td>
+    //                     <td style="border:1px solid #ddd; padding:8px; text-align:center;">
+    //                         $${item.productId.price * item.quantity}
+    //                     </td>
+    //                 </tr>
+    //             `
+    //             )
+    //             .join("");
+    
+    //         const emailHTML = `
+    //             <div style="font-family:Arial, sans-serif; line-height:1.6;">
+    //                 <h2>Hello ${data.firstName},</h2>
+    //                 <p>Thank you for your order! Here are your order details:</p>
+    //                 <h3>Order Summary:</h3>
+    //                 <table style="width:100%; border-collapse: collapse;">
+    //                     <tr>
+    //                         <th style="border:1px solid #ddd; padding:8px;">Product</th>
+    //                         <th style="border:1px solid #ddd; padding:8px;">Name</th>
+    //                         <th style="border:1px solid #ddd; padding:8px;">Quantity</th>
+    //                         <th style="border:1px solid #ddd; padding:8px;">Total</th>
+    //                     </tr>
+    //                     ${productList}
+    //                 </table>
+    //                 <p>We appreciate your interest!</p>
+    //                 <p><strong>Best Regards,</strong><br>${businessName}</p>
+    //             </div>
+    //         `;
+    
+    //         const transporter = nodemailer.createTransport({
+    //             host: "smtp.gmail.com",
+    //             port: 465,
+    //             secure: true,
+    //             auth: {
+    //                 user: process.env.EMAIL_USER,
+    //                 pass: process.env.EMAIL_PASSWORD
+    //             },
+    //             tls: { rejectUnauthorized: false }
+    //         });
+    
+    //         const mailOptions = {
+    //             from: process.env.EMAIL_USER,
+    //             to: data.email,
+    //             subject: "Order Confirmation",
+    //             html: emailHTML 
+    //         };
+    
+    //         try {
+    //             await transporter.sendMail(mailOptions);
+    //             console.log(`Order confirmation email sent successfully for business: ${businessName}`);
+    //         } catch (emailError) {
+    //             console.error(`Failed to send order confirmation email for ${businessName}:`, emailError);
+    //         }
+    //     }
+    
+    //     res.status(201).json({
+    //         message: "Orders created successfully",
+    //         orders: createdOrders.map(order => ({
+    //             orderId: order._id,
+    //             businessId: order.businessId,
+    //             branchCode: order.branchCode,
+    //             totalAmount: order.totalAmount
+    //         }))
+    //     });
+    // } catch (error) {
+    //     console.error("Error processing order:", error);
+    //     res.status(500).json({
+    //         message: "Internal server error",
+    //         error: error.message
+    //     });
+    // }
+     
 }
 
 async function getOrders(req, res){
@@ -122,6 +285,87 @@ async function getOrders(req, res){
     }
 }
 
+async function getSalespersonOrders(req, res){
+    const { branchCode, pageNo, limit } = req.query;
+
+    try {
+        const pageNumber = parseInt(pageNo);
+        const pageLimit = parseInt(limit);
+
+        if (pageNumber < 1 || pageLimit < 1) {
+            return res.status(400).json({ message: "Page Number and Limit must be positive numbers" });
+        }
+
+        if (!branchCode) {
+            return res.status(400).json({ message: "Branch Code is required" });
+        }
+
+        const branchOrders = await Order.find({ branchCode }).populate('cartItems');
+
+        if (!branchOrders.length) {
+            return res.status(200).json({ message: "No Orders found!!!!!" });
+        }
+
+        const ordersWithItemCount = branchOrders.map(order => ({
+            ...order.toObject(),
+            cartItemCount: order.cartItems.length || 0
+        }));
+
+        const startIndex = (pageNumber - 1) * pageLimit;
+        const endIndex = startIndex + pageLimit;
+        const totalOrders = ordersWithItemCount.length;
+        const totalPages = Math.ceil(totalOrders / pageLimit);
+        const paginatedOrders = ordersWithItemCount.slice(startIndex, endIndex);
+
+        const nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
+        const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
+
+        res.status(200).json({
+            branchOrders: paginatedOrders,
+            meta: {
+                totalOrders,
+                totalPages,
+                currentPage: pageNumber,
+                pageLimit,
+                nextPage,
+                previousPage,
+            },
+            message: "Orders retrieved successfully",
+        });
+
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+}
+
+async function assignOrderToBranch(req, res){
+    try {
+        const { orderId, branch } = req.body;
+    
+        if (!orderId || !branch?.branchCode) {
+            return res.status(400).json({ message: "Invalid Order ID or Branch Code" });
+        }
+    
+        const orderDetails = await Order.findByIdAndUpdate(
+            orderId,
+            { $set: { branchCode: branch.branchCode } },
+            { new: true } 
+        );
+    
+        if (!orderDetails) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+    
+        res.status(200).json({
+            orderDetails,
+            message: "Order Assigned To Branch Successfully"
+        });
+    
+    } catch (error) {
+        res.status(400).json({ message: "Server Error", error: error.message });
+    }    
+}
+
 async function updateOrderStatus(req, res){
     const { orderId, status } = req.body;
     try{
@@ -162,6 +406,8 @@ async function deleteOrder(req, res){
 module.exports = {
     addOrderDetails: addOrderDetails,
     getOrders: getOrders,
+    getSalespersonOrders, getSalespersonOrders,
+    assignOrderToBranch: assignOrderToBranch,
     updateOrderStatus: updateOrderStatus,
     deleteOrder: deleteOrder
 }

@@ -5,6 +5,8 @@ const orderController = require('../controller/orders-controller');
 
 router.post('/addOrderDetails', orderController.addOrderDetails);
 router.get('/getOrders', verifyToken, orderController.getOrders);
+router.get('/getSalespersonOrders', verifyToken, orderController.getSalespersonOrders)
+router.post('/assignOrderToBranch', orderController.assignOrderToBranch)
 router.post('/updateOrderStatus', verifyToken, orderController.updateOrderStatus);
 router.post('/deleteOrder', verifyToken, orderController.deleteOrder)
 
