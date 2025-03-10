@@ -61,7 +61,7 @@ const branchSchema = new mongoose.Schema(
             },
         ],
 
-        isMainBranch: {
+        hasMainBranch: {
             type: Boolean,
             default: false
         }

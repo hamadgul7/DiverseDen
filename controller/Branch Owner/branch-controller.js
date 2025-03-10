@@ -150,7 +150,6 @@ async function createBranch(req, res){
             return res.status(403).json({ message: "Your subscription has expired. Please renew your plan." });
         }
 
-        // Get branch limit dynamically from activePlan
         const branchLimit = businessOwner.activePlan.noOfBranches || 0;
 
         const branchCount = await Branch.countDocuments({ business });
@@ -233,9 +232,7 @@ async function updateBranch(req, res){
 
 async function deleteBranch(req, res) {
     const { branchCode, business } = req.body;
-
     try {
-        // Find and delete the branch
         const branch = await Branch.findOneAndDelete({ branchCode, business });
 
         if (!branch) {
@@ -244,38 +241,39 @@ async function deleteBranch(req, res) {
 
         const branchId = branch._id;
 
-        // Remove branch reference from the Business model
         await Business.findByIdAndUpdate(
             business,
             { $pull: { branches: branchId } }
         );
 
-        // Find all BranchProduct entries linked to this branch
         const branchProducts = await BranchProduct.find({ branchCode });
 
         for (const branchProduct of branchProducts) {
-            // Subtract assigned quantity from the Product model
             await Product.findByIdAndUpdate(
                 branchProduct.product,
                 {
                     $inc: { totalAssignedQuantity: -branchProduct.totalBranchQuantity },
-                    $pull: { branch: branchCode } // Remove branchCode from Product's branch array
+                    $pull: { branch: branchCode } 
                 }
             );
 
-            // Delete the BranchProduct entry
             await BranchProduct.findByIdAndDelete(branchProduct._id);
         }
 
-        // Remove all product references from the Branch model
         await Branch.updateMany(
             { _id: branchId },
             { $set: { products: [] } }
         );
 
-        // Delete the assigned Salesperson (if any)
         if (branch.salesperson) {
             await Salesperson.findByIdAndDelete(branch.salesperson);
+        }
+
+        if (branch.hasMainBranch) {
+            await User.findOneAndUpdate(
+                { business }, 
+                { $set: { hasMainBranch: false } }
+            );
         }
 
         res.status(200).json({ message: "Branch and associated products deleted successfully" });
