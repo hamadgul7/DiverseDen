@@ -158,8 +158,28 @@ async function viewBranchProductsById(req, res) {
     
 }
 
+async function viewBranchProductsByBranchCode(req, res) {
+    try {
+        const { branchCode } = req.query;
+        const products = await BranchProduct.find({ branchCode })
+            .populate({
+                path: "product",
+            })
+            .lean();
+
+        res.status(200).json({
+            products,
+            message: "Branch Products Retrieved Successfully"
+        })
+
+    } catch (error) {
+        console.error("Error fetching branch products:", error);
+        throw error;
+    }
+}
+
 async function viewBranchProductsDetail(req, res){
-    const { branchCode, productId } = req.body;
+    const { branchCode, productId } = req.query;
     try{
         if(!branchCode || !productId){
             return res.status(400).json({ message: "Invalid Branch Code or Product Id" })
@@ -598,6 +618,7 @@ async function calculateVariantRemainings(req, res) {
 
 module.exports = {
     viewBranchProductsById: viewBranchProductsById,
+    viewBranchProductsByBranchCode: viewBranchProductsByBranchCode,
     assignProductToBranch: assignProductToBranch,
     calculateVariantRemainings: calculateVariantRemainings,
     viewBranchProductsDetail: viewBranchProductsDetail
