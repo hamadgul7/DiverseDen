@@ -1,91 +1,215 @@
 const Order = require('../model/orders-model');
 require("dotenv").config();
 const { Branch } = require('../model/Branch Owner/business-model');
+const Product = require('../model/Branch Owner/products-model')
 const nodemailer = require('nodemailer'); 
 
 
 async function addOrderDetails(req, res) {
 
     const { data, cartItems, orderType, shippingCost } = req.body;
-    console.log("CartItems Details",cartItems)
-    try {
-        const userId = cartItems.find(item => item.userId)?.userId;
-        if (!userId) {
-            return res.status(400).json({ message: "No user ID found" });
+console.log("CartItems Details", cartItems);
+
+try {
+    const userId = cartItems.find(item => item.userId)?.userId;
+    if (!userId) {
+        return res.status(400).json({ message: "No user ID found" });
+    }
+
+    const userInfo = {
+        firstname: data.firstName,
+        lastname: data.lastName,
+        email: data.email,
+        address: data.address,
+        city: data.city,
+        postal: data.postal,
+        phone: data.phone,
+        paymentMethod: data.paymentMethod
+    };
+
+    const businessGroups = cartItems.reduce((acc, item) => {
+        const businessId = item.productId.business;
+        if (!acc[businessId]) {
+            acc[businessId] = [];
+        }
+        acc[businessId].push(item);
+        return acc;
+    }, {});
+
+    const createdOrders = [];
+
+    for (const [businessId, items] of Object.entries(businessGroups)) {
+        const mainBranch = await Branch.findOne({
+            business: businessId,
+            hasMainBranch: true
+        });
+
+        if (!mainBranch) {
+            return res.status(400).json({
+                message: `No main branch found for business ${businessId}`
+            });
         }
 
-        const userInfo = {
-            firstname: data.firstName,
-            lastname: data.lastName,
-            email: data.email,
-            address: data.address,
-            city: data.city,
-            postal: data.postal,
-            phone: data.phone,
-            paymentMethod: data.paymentMethod
+        // **Inventory Deduction**
+        for (const item of items) {
+            const { productId, selectedVariant, quantity } = item;
+
+            // Find the product in the database
+            const product = await Product.findById(productId);
+            if (!product) {
+                return res.status(404).json({ message: `Product ${productId} not found` });
+            }
+
+            // Find the variant matching the selected variant
+            const variant = product.variants.find(v => 
+                v.size === selectedVariant.size &&
+                v.material === selectedVariant.material
+            );
+
+            if (!variant) {
+                return res.status(404).json({ message: `Variant not found for Product ${productId}` });
+            }
+
+            // Find the color within the variant
+            const colorVariant = variant.colors.find(c => c.color === selectedVariant.color);
+            if (!colorVariant) {
+                return res.status(404).json({ message: `Color variant not found for Product ${productId}` });
+            }
+
+            // **Deduct inventory**
+            if (colorVariant.quantity < quantity) {
+                return res.status(400).json({ message: `Not enough stock for Product ${productId}, Color ${selectedVariant.color}` });
+            }
+
+            colorVariant.quantity -= quantity; // Reduce color quantity
+            variant.variantTotal -= quantity; // Reduce variant total
+            product.totalQuantity -= quantity; // Reduce total product quantity
+
+            await product.save(); // Save updated product
+        }
+
+        const subTotal = items.reduce((total, item) => total + (item.productId.price * item.quantity), 0);
+        const totalAmount = subTotal + shippingCost;
+
+        const orderData = {
+            businessId,
+            userId,
+            userInfo,
+            branchCode: mainBranch.branchCode, 
+            cartItems,
+            status: 'Pending',
+            orderType: orderType,
+            subTotal,
+            shippingCost,
+            totalAmount
         };
 
-        const businessGroups = cartItems.reduce((acc, item) => {
-            const businessId = item.productId.business;
-            if (!acc[businessId]) {
-                acc[businessId] = [];
-            }
-            acc[businessId].push(item);
-            return acc;
-        }, {});
-
-        const createdOrders = [];
-
-        for (const [businessId, items] of Object.entries(businessGroups)) {
-            const mainBranch = await Branch.findOne({
-                business: businessId,
-                hasMainBranch: true
-            });
-
-            if (!mainBranch) {
-                return res.status(400).json({
-                    message: `No main branch found for business ${businessId}`
-                });
-            }
-
-            const subTotal = items.reduce((total, item) => total + (item.productId.price * item.quantity), 0);
-            const totalAmount = subTotal + shippingCost;
-
-            const orderData = {
-                businessId,
-                userId,
-                userInfo,
-                branchCode: mainBranch.branchCode, 
-                cartItems,
-                status: 'Pending',
-                orderType: orderType,
-                subTotal,
-                shippingCost,
-                totalAmount
-            };
-
-            const order = new Order(orderData);
-            await order.save();
-            createdOrders.push(order);
-        }
-
-        res.status(201).json({ 
-            message: "Orders created successfully", 
-            orders: createdOrders.map(order => ({
-                orderId: order._id,
-                businessId: order.businessId,
-                branchCode: order.branchCode, 
-                totalAmount: order.totalAmount
-            }))
-        });
-    } 
-    catch (error) {
-        console.error('Error processing order:', error);
-        res.status(500).json({ 
-            message: "Internal server error", 
-            error: error.message 
-        });
+        const order = new Order(orderData);
+        await order.save();
+        createdOrders.push(order);
     }
+
+    res.status(201).json({ 
+        message: "Orders created successfully", 
+        orders: createdOrders.map(order => ({
+            orderId: order._id,
+            businessId: order.businessId,
+            branchCode: order.branchCode, 
+            totalAmount: order.totalAmount
+        }))
+    });
+} 
+catch (error) {
+    console.error('Error processing order:', error);
+    res.status(500).json({ 
+        message: "Internal server error", 
+        error: error.message 
+    });
+}
+
+
+
+
+    // const { data, cartItems, orderType, shippingCost } = req.body;
+    // console.log("CartItems Details",cartItems)
+    // try {
+    //     const userId = cartItems.find(item => item.userId)?.userId;
+    //     if (!userId) {
+    //         return res.status(400).json({ message: "No user ID found" });
+    //     }
+
+    //     const userInfo = {
+    //         firstname: data.firstName,
+    //         lastname: data.lastName,
+    //         email: data.email,
+    //         address: data.address,
+    //         city: data.city,
+    //         postal: data.postal,
+    //         phone: data.phone,
+    //         paymentMethod: data.paymentMethod
+    //     };
+
+    //     const businessGroups = cartItems.reduce((acc, item) => {
+    //         const businessId = item.productId.business;
+    //         if (!acc[businessId]) {
+    //             acc[businessId] = [];
+    //         }
+    //         acc[businessId].push(item);
+    //         return acc;
+    //     }, {});
+
+    //     const createdOrders = [];
+
+    //     for (const [businessId, items] of Object.entries(businessGroups)) {
+    //         const mainBranch = await Branch.findOne({
+    //             business: businessId,
+    //             hasMainBranch: true
+    //         });
+
+    //         if (!mainBranch) {
+    //             return res.status(400).json({
+    //                 message: `No main branch found for business ${businessId}`
+    //             });
+    //         }
+
+    //         const subTotal = items.reduce((total, item) => total + (item.productId.price * item.quantity), 0);
+    //         const totalAmount = subTotal + shippingCost;
+
+    //         const orderData = {
+    //             businessId,
+    //             userId,
+    //             userInfo,
+    //             branchCode: mainBranch.branchCode, 
+    //             cartItems,
+    //             status: 'Pending',
+    //             orderType: orderType,
+    //             subTotal,
+    //             shippingCost,
+    //             totalAmount
+    //         };
+
+    //         const order = new Order(orderData);
+    //         await order.save();
+    //         createdOrders.push(order);
+    //     }
+
+    //     res.status(201).json({ 
+    //         message: "Orders created successfully", 
+    //         orders: createdOrders.map(order => ({
+    //             orderId: order._id,
+    //             businessId: order.businessId,
+    //             branchCode: order.branchCode, 
+    //             totalAmount: order.totalAmount
+    //         }))
+    //     });
+    // } 
+    // catch (error) {
+    //     console.error('Error processing order:', error);
+    //     res.status(500).json({ 
+    //         message: "Internal server error", 
+    //         error: error.message 
+    //     });
+    // }
 
 
 
