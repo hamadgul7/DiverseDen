@@ -761,14 +761,17 @@ async function getSalespersonOrders(req, res){
 }
 
 async function assignOrderToBranch(req, res){
+
     try {
-        const { orderId, branch } = req.body;
-        
+        const { orderId, branch, cartItems } = req.body;
+
+        console.log("heyyyyyyyyy", cartItems)
     
         if (!orderId || !branch?.branchCode) {
             return res.status(400).json({ message: "Invalid Order ID or Branch Code" });
         }
     
+        // Find and update the order with the new branch assignment
         const orderDetails = await Order.findByIdAndUpdate(
             orderId,
             { $set: { branchCode: branch.branchCode } },
@@ -779,14 +782,90 @@ async function assignOrderToBranch(req, res){
             return res.status(404).json({ message: "Order not found" });
         }
     
+        // Process inventory deduction in BranchProduct model
+        for (const cartItem of cartItems) {
+            const { productId, selectedVariant, quantity } = cartItem;
+    
+            // Find the branch product using productId and branchCode
+            const branchProduct = await BranchProduct.findOne({
+                product: productId,
+                branchCode: branch.branchCode
+            });
+    
+            if (!branchProduct) {
+                console.warn(`BranchProduct not found for Product ID: ${productId} in Branch ${branch.branchCode}`);
+                continue; // Skip this item if the branch product is not found
+            }
+    
+            // Find the correct variant inside branchProduct
+            const variant = branchProduct.variants.find(v => 
+                v.size === selectedVariant.size && v.material === selectedVariant.material
+            );
+    
+            if (!variant) {
+                console.warn(`Variant not found for Product ID: ${productId} with selected variant`);
+                continue;
+            }
+    
+            // Find the correct color variant and subtract quantity
+            const colorVariant = variant.colors.find(c => c.color === selectedVariant.color);
+            
+            if (!colorVariant) {
+                console.warn(`Color Variant not found for Product ID: ${productId} with color: ${selectedVariant.color}`);
+                continue;
+            }
+    
+            // Ensure the quantity does not go below zero
+            if (colorVariant.quantity < quantity) {
+                return res.status(400).json({
+                    message: `Not enough stock for ${branchProduct.title} in color ${selectedVariant.color}`
+                });
+            }
+    
+            colorVariant.quantity -= quantity; // Subtract quantity from the specific variant
+            branchProduct.totalBranchQuantity -= quantity; // Subtract from total branch quantity
+    
+            await branchProduct.save(); // Save updated branch product inventory
+        }
+    
         res.status(200).json({
             orderDetails,
-            message: "Order Assigned To Branch Successfully"
+            message: "Order Assigned To Branch Successfully, Inventory Updated"
         });
     
     } catch (error) {
-        res.status(400).json({ message: "Server Error", error: error.message });
-    }    
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+    
+
+
+
+    // try {
+    //     const { orderId, branch, cartItems } = req.body;
+        
+    
+    //     if (!orderId || !branch?.branchCode) {
+    //         return res.status(400).json({ message: "Invalid Order ID or Branch Code" });
+    //     }
+    
+    //     const orderDetails = await Order.findByIdAndUpdate(
+    //         orderId,
+    //         { $set: { branchCode: branch.branchCode } },
+    //         { new: true } 
+    //     );
+    
+    //     if (!orderDetails) {
+    //         return res.status(404).json({ message: "Order not found" });
+    //     }
+    
+    //     res.status(200).json({
+    //         orderDetails,
+    //         message: "Order Assigned To Branch Successfully"
+    //     });
+    
+    // } catch (error) {
+    //     res.status(400).json({ message: "Server Error", error: error.message });
+    // }    
 }
 
 async function updateOrderStatus(req, res){

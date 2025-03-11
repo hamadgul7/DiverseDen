@@ -4,7 +4,7 @@ const verifyToken = require('../../middleware/authMiddleware')
 const router = express.Router();
 
 //token
-router.get('/viewBranchProductsById',  branchProductController.viewBranchProductsById);
+router.get('/viewBranchProductsById', verifyToken, branchProductController.viewBranchProductsById);
 router.get('/viewBranchProductsByBranchCodeWithPagination', branchProductController.viewBranchProductsByBranchCodeWithPagination)
 router.get('/viewBranchProductsByBranchCode', branchProductController.viewBranchProductsByBranchCode);
 router.post('/assignProductToBranch', verifyToken, branchProductController.assignProductToBranch);
