@@ -51,6 +51,7 @@ async function verifyBusiness(req, res){
 
         let businessDetails = [];
 
+        let businessExist = false;
         if (business) {
             businessDetails.push({
                 _id: business._id,
@@ -64,9 +65,16 @@ async function verifyBusiness(req, res){
                 createdAt: business.createdAt,
                 updatedAt: business.updatedAt
             });
+
+            businessExist = true;
         }
 
-        return res.json(businessDetails);
+        return res.json({
+            businessDetails,
+            businessExist
+        }
+            
+        );
 
     } catch (error) {
         console.error("Error fetching business details:", error);

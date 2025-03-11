@@ -764,37 +764,26 @@ async function assignOrderToBranch(req, res){
 
     try {
         const { orderId, branch, cartItems } = req.body;
-
-        console.log("heyyyyyyyyy", cartItems)
     
         if (!orderId || !branch?.branchCode) {
             return res.status(400).json({ message: "Invalid Order ID or Branch Code" });
         }
     
-        // Find and update the order with the new branch assignment
-        const orderDetails = await Order.findByIdAndUpdate(
-            orderId,
-            { $set: { branchCode: branch.branchCode } },
-            { new: true } 
-        );
+        let allProductsFound = true; // Flag to check if all products exist in the branch
     
-        if (!orderDetails) {
-            return res.status(404).json({ message: "Order not found" });
-        }
-    
-        // Process inventory deduction in BranchProduct model
         for (const cartItem of cartItems) {
             const { productId, selectedVariant, quantity } = cartItem;
     
             // Find the branch product using productId and branchCode
             const branchProduct = await BranchProduct.findOne({
-                product: productId,
+                product: productId._id,
                 branchCode: branch.branchCode
             });
     
             if (!branchProduct) {
                 console.warn(`BranchProduct not found for Product ID: ${productId} in Branch ${branch.branchCode}`);
-                continue; // Skip this item if the branch product is not found
+                allProductsFound = false;
+                break; // Stop processing if a product is not found in the branch
             }
     
             // Find the correct variant inside branchProduct
@@ -804,7 +793,8 @@ async function assignOrderToBranch(req, res){
     
             if (!variant) {
                 console.warn(`Variant not found for Product ID: ${productId} with selected variant`);
-                continue;
+                allProductsFound = false;
+                break;
             }
     
             // Find the correct color variant and subtract quantity
@@ -812,7 +802,8 @@ async function assignOrderToBranch(req, res){
             
             if (!colorVariant) {
                 console.warn(`Color Variant not found for Product ID: ${productId} with color: ${selectedVariant.color}`);
-                continue;
+                allProductsFound = false;
+                break;
             }
     
             // Ensure the quantity does not go below zero
@@ -828,6 +819,24 @@ async function assignOrderToBranch(req, res){
             await branchProduct.save(); // Save updated branch product inventory
         }
     
+        // If any product was missing, do not update the order branch code
+        if (!allProductsFound) {
+            return res.status(400).json({ 
+                message: "Some products were not found in the selected branch. Order was not updated." 
+            });
+        }
+    
+        // Update the order branchCode if all products exist in the branch
+        const orderDetails = await Order.findByIdAndUpdate(
+            orderId,
+            { $set: { branchCode: branch.branchCode } },
+            { new: true } 
+        );
+    
+        if (!orderDetails) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+    
         res.status(200).json({
             orderDetails,
             message: "Order Assigned To Branch Successfully, Inventory Updated"
@@ -836,6 +845,7 @@ async function assignOrderToBranch(req, res){
     } catch (error) {
         res.status(500).json({ message: "Server Error", error: error.message });
     }
+    
     
 
 

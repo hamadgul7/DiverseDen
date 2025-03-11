@@ -3,8 +3,10 @@ const businessController = require('../../controller/Branch Owner/business-contr
 const verifyToken = require('../../middleware/authMiddleware')
 const router = express.Router();
 
+
+// add token
 router.post('/addBusiness', verifyToken, businessController.addBusiness);
-router.get('/verifyBusiness', verifyToken, businessController.verifyBusiness);
+router.get('/verifyBusiness',  businessController.verifyBusiness);
 
 
 module.exports = router;
