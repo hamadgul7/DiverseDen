@@ -6,7 +6,8 @@ const nodemailer = require('nodemailer');
 
 async function addOrderDetails(req, res) {
 
-    const { data, cartItems, orderType } = req.body;
+    const { data, cartItems, orderType, shippingCost } = req.body;
+    console.log("CartItems Details",cartItems)
     try {
         const userId = cartItems.find(item => item.userId)?.userId;
         if (!userId) {
@@ -47,16 +48,20 @@ async function addOrderDetails(req, res) {
                 });
             }
 
+            const subTotal = items.reduce((total, item) => total + (item.productId.price * item.quantity), 0);
+            const totalAmount = subTotal + shippingCost;
+
             const orderData = {
                 businessId,
                 userId,
                 userInfo,
                 branchCode: mainBranch.branchCode, 
-                cartItems: items.map(item => item.productId._id),
+                cartItems,
                 status: 'Pending',
                 orderType: orderType,
-                totalAmount: items.reduce((total, item) =>
-                    total + (item.productId.price * item.quantity), 0)
+                subTotal,
+                shippingCost,
+                totalAmount
             };
 
             const order = new Order(orderData);

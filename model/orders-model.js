@@ -71,12 +71,7 @@ const ordersSchema = new mongoose.Schema(
             required: [true, "UserInfo is required"]
         },
 
-        cartItems: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Product"
-            },
-        ],
+        cartItems: [{ type: mongoose.Schema.Types.Mixed }],
 
         status: {
             type: String,
@@ -87,10 +82,21 @@ const ordersSchema = new mongoose.Schema(
             type: String
         },
         
+        subTotal: {
+            type: Number,
+            required: [true, "SubTotal is required"]
+        },
+
+        shippingCost: {
+            type: Number,
+            default: 0
+        },
+
         totalAmount: {
             type: Number,
             required: [true, "Total Amount is required"]
-        }
+        },
+
     },
     {timestamps: true}
 )
