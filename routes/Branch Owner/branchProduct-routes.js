@@ -5,7 +5,8 @@ const router = express.Router();
 
 //token
 router.get('/viewBranchProductsById',  branchProductController.viewBranchProductsById);
-router.get('/viewBranchProductsByBranchCode', branchProductController.viewBranchProductsByBranchCode)
+router.get('/viewBranchProductsByBranchCodeWithPagination', branchProductController.viewBranchProductsByBranchCodeWithPagination)
+router.get('/viewBranchProductsByBranchCode', branchProductController.viewBranchProductsByBranchCode);
 router.post('/assignProductToBranch', verifyToken, branchProductController.assignProductToBranch);
 router.get('/calculateVariantRemainings', verifyToken, branchProductController.calculateVariantRemainings);
 router.get('/viewBranchProductsDetail', verifyToken, branchProductController.viewBranchProductsDetail)

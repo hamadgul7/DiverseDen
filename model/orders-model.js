@@ -28,7 +28,7 @@ const userInfoSchema = new mongoose.Schema(
 
         city: {
             type: String,
-            required: [true, "City is required"]
+            // required: [true, "City is required"]
         },
 
         postal: {

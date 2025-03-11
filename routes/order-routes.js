@@ -4,7 +4,8 @@ const verifyToken = require('../middleware/authMiddleware');
 const orderController = require('../controller/orders-controller');
 
 router.post('/addOrderDetails', orderController.addOrderDetails);
-router.get('/getOrders', verifyToken, orderController.getOrders);
+//add token
+router.get('/getOrders',  orderController.getOrders);
 router.get('/getSalespersonOrders', verifyToken, orderController.getSalespersonOrders)
 router.post('/assignOrderToBranch', orderController.assignOrderToBranch)
 router.post('/updateOrderStatus', verifyToken, orderController.updateOrderStatus);
