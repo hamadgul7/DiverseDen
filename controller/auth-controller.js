@@ -117,24 +117,9 @@ async function verifyTokenRefresh(req, res) {
 
 
 }
-// async function getUser(req, res) {
-//   const { userId } = req.body
-//   try {
-//       const user = await User.findOne({_id: userId}); // Retrieve the logged-in user
-//       if (!user) {
-//           return res.status(404).json({ message: "User not found" });
-//       }
-
-//       res.status(200).json({user}); // Will automatically exclude businessId if not a Branch Owner
-//   } catch (error) {
-//       res.status(400).json({ message: error.message });
-//   }
-// }
-
 
 module.exports = {
   signup: signup,
   login: login,
   verifyTokenRefresh: verifyTokenRefresh,
-  // getUser: getUser
 };

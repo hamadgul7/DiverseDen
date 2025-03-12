@@ -5,8 +5,11 @@ const branchProductSchema = new mongoose.Schema({
         type: String,
         required: [true, "Product title is required"]
     },
-    branchCode: { type: String, required: true }, // Branch Code
-    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" }, // Reference to Product
+
+    branchCode: { type: String, required: true }, 
+
+    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" }, 
+
     price: {
         type: Number,
         required: [true, "Product Price is required"]
@@ -16,18 +19,16 @@ const branchProductSchema = new mongoose.Schema({
         type: String,
         required: [true, "Product Category is required"]
     },
-    // imagePath: {
-    //     type: [String]
-    // },
+
     variants: [{
         size: String,
         material: String,
         colors: [{
             color: String,
-            quantity: Number // Quantity assigned to this branch
+            quantity: Number 
         }]
     }],
-    totalBranchQuantity: Number // Total assigned quantity in this branch
+    totalBranchQuantity: Number 
 });
 
 const BranchProduct = mongoose.model("BranchProduct", branchProductSchema);

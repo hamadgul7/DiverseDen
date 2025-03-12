@@ -122,7 +122,6 @@ async function emptyCart(req, res){
     }
 }
 
-
 module.exports = {
     viewCart: viewCart,
     addToCart: addToCart,

@@ -290,42 +290,35 @@ async function deleteProductFromBranch(req, res) {
     const { branchId, productId } = req.body;
 
     try {
-        // Check if branch exists
         const branch = await Branch.findById(branchId);
         if (!branch) {
             return res.status(404).json({ message: "Branch not found" });
         }
 
-        // Check if product exists in the branch
         if (!branch.products.includes(productId)) {
             return res.status(400).json({ message: "Product is not assigned to this branch" });
         }
 
-        // Remove product from branch
         await Branch.findByIdAndUpdate(
             branchId,
             { $pull: { products: productId } },
             { new: true }
         );
 
-        // Find BranchProduct associated with the branch and product
         const branchProduct = await BranchProduct.findOne({ branchCode: branch.branchCode, product: productId });
 
         if (branchProduct) {
-            // Get total assigned quantity in this branch
             const totalBranchQuantity = branchProduct.totalBranchQuantity;
 
-            // Update Product model:
             await Product.findByIdAndUpdate(
                 productId,
                 {
-                    $inc: { totalAssignedQuantity: -totalBranchQuantity }, // Subtract assigned quantity
-                    $pull: { branch: branch.branchCode } // Remove branchCode from Product model
+                    $inc: { totalAssignedQuantity: -totalBranchQuantity }, 
+                    $pull: { branch: branch.branchCode } 
                 },
                 { new: true }
             );
 
-            // Delete the BranchProduct entry
             await BranchProduct.findByIdAndDelete(branchProduct._id);
         }
 

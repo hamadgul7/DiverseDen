@@ -51,8 +51,6 @@ async function addProductReview(req, res){
 
 async function viewProductReview(req, res){
     const { productId } = req.query;
-
-
     try {
         if (!productId) {
             return res.status(400).json({ message: "Invalid Product ID" });

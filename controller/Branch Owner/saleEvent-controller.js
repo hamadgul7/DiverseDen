@@ -151,7 +151,6 @@ async function viewSaleEvents(req, res){
     }
 }
 
-
 async function viewASaleEventById(req, res){
 
     try {

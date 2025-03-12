@@ -194,14 +194,6 @@ async function searchProduct(req, res){
             return res.status(404).json({message: "No Related Products Found"})
         }
 
-        // const baseUrl = `${req.protocol}://${req.get('host')}`;
-        // const productsWithImages = products.map((product) =>{
-        //     if(Array.isArray(product.imagePath)){
-        //         product.imagePath = product.imagePath.map((image) => `${baseUrl}/${image}`);
-        //     }
-        //     return product;
-        // });
-
         res.status(200).json({
             products,
             message: "Searched Products"

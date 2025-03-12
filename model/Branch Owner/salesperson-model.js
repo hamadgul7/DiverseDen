@@ -1,7 +1,4 @@
 const mongoose = require('mongoose');
-// function getBranchModel() {
-//     return require('./business-model');
-// }
 
 const salespersonSchema = new mongoose.Schema(
     {

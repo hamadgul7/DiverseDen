@@ -5,14 +5,12 @@ const User = require('../model/auth-model')
 
 async function viewPlans(req, res) {
     try {
-        // Fetch all subscription plans
         const plans = await Plan.find();
 
         if (plans.length === 0) {
             return res.status(404).json({ message: "No Subscription Plans Found" });
         }
 
-        // Fetch users grouped by their active subscription plans
         const usersByPlan = await User.aggregate([
             {
                 $match: {
@@ -31,7 +29,7 @@ async function viewPlans(req, res) {
             { $unwind: "$planDetails" },
             {
                 $group: {
-                    _id: "$planDetails._id", // Grouping by plan ID
+                    _id: "$planDetails._id", 
                     users: {
                         $push: {
                             _id: "$_id",
@@ -53,7 +51,6 @@ async function viewPlans(req, res) {
             }
         ]);
 
-        // Convert user data into a map for easy lookup
         const userMap = usersByPlan.reduce((acc, item) => {
             acc[item._id] = {
                 subscribers: item.users,
@@ -62,11 +59,10 @@ async function viewPlans(req, res) {
             return acc;
         }, {});
 
-        // Attach subscriber details inside each plan
         const enrichedPlans = plans.map(plan => ({
             ...plan.toObject(),
-            subscribers: userMap[plan._id]?.subscribers || [], // Attach users
-            subscriberCount: userMap[plan._id]?.subscriberCount || 0 // Attach count
+            subscribers: userMap[plan._id]?.subscribers || [], 
+            subscriberCount: userMap[plan._id]?.subscriberCount || 0 
         }));
 
         return res.status(200).json({

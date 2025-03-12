@@ -70,13 +70,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// userSchema.methods.toJSON = function () {
-//   const user = this.toObject();
-//   if (user.role !== 'Branch Owner') {
-//       delete user.business;
-//   }
-//   return user;
-// };
 
 const User = mongoose.model("User", userSchema);
 
